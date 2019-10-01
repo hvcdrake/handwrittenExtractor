@@ -1,0 +1,481 @@
+# Import section
+import cv2
+import numpy as np
+import requests
+import time
+import json
+import pandas as pd
+import sqlalchemy as sa
+import pyodbc
+import time
+from paralel_send import multi_send
+
+
+ID_CAMPANIA = 3
+ID_USUARIO = 1
+
+# MARZO COMPRAS
+traslation_dict = {
+    'dni':{'tras_x':27,'tras_y':-44,'width':340,'height':75},
+    'tel':{'tras_x':27+455,'tras_y':-44,'width':290,'height':75},
+    'mail':{'tras_x':60,'tras_y':185,'width':800,'height':65},
+    'nomb_ape1':{'tras_x':240,'tras_y':-180,'width':540,'height':80},
+    'nomb_ape2':{'tras_x':-40,'tras_y':-105,'width':820,'height':65},
+    'dir1':{'tras_x':100,'tras_y':20,'width':670,'height':65},
+    'dir2':{'tras_x':-40,'tras_y':72,'width':820,'height':65},
+    'distrito':{'tras_x':70,'tras_y':127,'width':800,'height':65},
+    'cc':{'tras_x':200,'tras_y':240,'width':800,'height':65}
+}
+
+lines_dict = {
+    'dni_tel':{'tras_x':-40,'tras_y':-45,'width':820,'height':80}
+}
+''' 
+## CAMIONETA TOYOTA 2018
+traslation_dict = {
+    'nomb_ape1':{'tras_x':210,'tras_y':-140,'width':540,'height':60},
+    'nomb_ape2':{'tras_x':-40,'tras_y':-82,'width':820,'height':50},
+    'dni':{'tras_x':27,'tras_y':-40,'width':310,'height':55},
+    'tel':{'tras_x':27+400,'tras_y':-40,'width':290,'height':55},
+    'dir1':{'tras_x':100,'tras_y':7,'width':670,'height':50},
+    'dir2':{'tras_x':-40,'tras_y':57,'width':820,'height':50},
+    'distrito':{'tras_x':70,'tras_y':102,'width':800,'height':50},
+    'mail':{'tras_x':60,'tras_y':152,'width':800,'height':50},
+    'cc':{'tras_x':200,'tras_y':198,'width':800,'height':50}
+}
+
+lines_dict = {
+    'dni_tel':{'tras_x':-40,'tras_y':-40,'width':800,'height':55}
+}
+'''
+
+# MUNDIAL MAMA
+traslation_dict = {
+    'dni':{'tras_x':27,'tras_y':-44,'width':340,'height':75},
+    'tel':{'tras_x':27+455,'tras_y':-44,'width':290,'height':75},
+    'mail':{'tras_x':60,'tras_y':185,'width':800,'height':65},
+    'nomb_ape1':{'tras_x':240,'tras_y':-180,'width':540,'height':80},
+    'nomb_ape2':{'tras_x':-40,'tras_y':-105,'width':820,'height':65},
+    'dir1':{'tras_x':100,'tras_y':20,'width':670,'height':65},
+    'dir2':{'tras_x':-40,'tras_y':72,'width':820,'height':65},
+    'distrito':{'tras_x':70,'tras_y':127,'width':800,'height':65},
+    'cc':{'tras_x':200,'tras_y':240,'width':800,'height':65}
+}
+
+lines_dict = {
+    'dni_tel':{'tras_x':-40,'tras_y':-45,'width':820,'height':80}
+}
+
+eqs = {
+    'Normal': 90.00,
+    'Low': 85.00
+}
+
+banned_field_dict = ['DNI:','DNI','DN']+['Telefono:','Telefono']+['E-mail:']+['Nombres y Apellidos:']+['Direccion:']+['Distrito:']+['Centro Comercial:']
+n_eqs = {'%':'90',')':'',',':'','$':'5','f':'7','&':'6','+':'7','g':'9','l':'1','o':'0','y':'4','/':'1','.':'','-':''}
+
+
+def center_of(bounding_box):
+    xs = np.array([bounding_box[0],bounding_box[2],bounding_box[4],bounding_box[6]])
+    ys = np.array([bounding_box[1],bounding_box[3],bounding_box[5],bounding_box[7]])
+    return int(xs.sum() / xs.size) , int(ys.sum() / ys.size)
+
+def dni_rect_from_ce(x, y, cv2_v, img, areas_dict, lines_dict):
+    w = img.shape[1]
+    h = img.shape[0]
+
+    color = (0, 0, 255)
+    thicknes = 2
+
+    fields = []
+    res_dict = {}
+
+    for key in areas_dict.keys():
+        tras_vector = np.array([areas_dict[key]['tras_x'], areas_dict[key]['tras_y']])
+        point = np.array([x, y]) + tras_vector
+        point_2 = point + np.array([areas_dict[key]['width'], areas_dict[key]['height']])
+
+        point = np.where(point<=0,0,point)
+        point_2[0] = w if point_2[0]>= w else point_2[0]
+        point_2[1] = h if point_2[1]>= h else point_2[1]
+
+        cv2_v.rectangle(img,(point[0],point[1]),(point_2[0],point_2[1]),color,thicknes)
+        res_dict[key] = (point, point_2)
+        # print('{} {}'.format(point,point_2))
+
+    for key in lines_dict.keys():
+        tras_vector = np.array([lines_dict[key]['tras_x'], lines_dict[key]['tras_y']])
+        point = np.array([x, y]) + tras_vector
+        point_2 = point + np.array([lines_dict[key]['width'], lines_dict[key]['height']])
+
+        point = np.where(point<=0,0,point)
+        point_2[0] = w if point_2[0]>= w else point_2[0]
+        point_2[1] = h if point_2[1]>= h else point_2[1]
+
+        # cv2_v.rectangle(img,(point[0],point[1]),(point_2[0],point_2[1]),color,thicknes)
+        res_dict[key] = (point, point_2)
+
+    # return res_dict['dni'][0], res_dict['dni'][1], res_dict['tel'][0], res_dict['tel'][1]
+    return res_dict
+
+def is_in_box(center, top_left_point, bottom_right_point):
+    x = center[0] > top_left_point[0] and center[0] < bottom_right_point[0]
+    y = center[1] > top_left_point[1] and center[1] < bottom_right_point[1]
+    return (x and y)
+
+def get_fields_from_json(azure_json, areas_dict):
+    fields = {}
+    scores = {}
+    j=0
+
+    # Setting empty arrays in result
+    for key in areas_dict.keys():
+        fields[key] = []
+        scores[key] = []
+
+    for line in azure_json['recognitionResult']['lines']:
+        j+=1
+        # print('Line {}: {},{}'.format(j,line['text'],line['boundingBox']))
+
+        # Drawing areas
+        cv2.rectangle(image,(line['boundingBox'][0],line['boundingBox'][1]),(line['boundingBox'][2],line['boundingBox'][5]),(0,0,0),1)
+        cv2.circle(image,center_of(line['boundingBox']), 4, (0,255,255), -1)
+
+        # Searching in areas_dict
+        c = center_of(line['boundingBox'])
+        t = line['text']
+        ws = []
+        scos = []
+        for w in line['words']:
+            ws.append(w['text'])
+            try:
+                scos.append(w['confidence'])
+            except:
+                scos.append('Normal')
+
+        for key in areas_dict.keys():
+            # print('C {} está en {}?'.format(c, areas_dict[key]))
+            if is_in_box(c, areas_dict[key][0], areas_dict[key][1]):
+                # print('String: {} --> {}'.format(t,key))
+                fields[key].append(ws)
+                scores[key].append(scos)
+
+    return fields, scores
+
+
+def basic_digit_clean(string, num_eqs):
+    for k in num_eqs.keys():
+        string = string.replace(k, num_eqs[k])
+    return string
+
+
+def basic_field_clean(string):
+    a = string.find(':')
+    if a >= 0:
+        return string[a + 1:]
+    return string
+
+
+def post_num_field(l_field, l_score, banned, num_eqs={}, separator=""):
+    value = ""
+    score = 0.0
+    ct = 0
+
+    for i in range(len(l_field)):
+        for j in range(len(l_field[i])):
+            # print(j)
+            if l_field[i][j] not in banned:
+                ct += 1
+                value += separator + l_field[i][j]
+                # print('{}'.format(l_score[i][j]))
+                score += eqs[l_score[i][j]]
+    value = basic_digit_clean(value, num_eqs)
+    return (value.strip(), score/ct) if ct > 0 else (value, 0.0)
+
+
+def get_dni_from_line(string, num_eqs):
+    a = string.find('DNI:')
+    b = string.find('Telefono:')
+    if a>=0 and b>=0:
+        return basic_digit_clean(string[a+len('DNI:'):b],num_eqs)
+    a = string.find('DNI')
+    b = string.find('Telefono')
+    if a>=0 and b>=0:
+        return basic_digit_clean(string[a+len('DNI'):b],num_eqs)
+    else:
+        return ""
+
+def get_tel_from_line(string, num_eqs):
+    b = string.find('Telefono:')
+    if b>=0:
+        return basic_digit_clean(string[b+len('Telefono:'):],num_eqs)
+    b = string.find('Telefono')
+    if b>=0:
+        return basic_digit_clean(string[b+len('Telefono'):],num_eqs)
+    else:
+        return ""
+
+# Getting arrays
+ruta = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\areas_result\\'
+
+m_widths = np.genfromtxt(ruta + 'widths.txt')
+m_heights = np.genfromtxt(ruta + 'heights.txt')
+m_cxs = np.genfromtxt(ruta + 'cxs.txt')
+m_cys = np.genfromtxt(ruta + 'cys.txt')
+m_files = np.load(ruta + 'paths.npy')
+m_azure_flags = np.load(ruta + 'azure_flags.npy')
+
+
+NUM_WORKERS = 10
+print('Empezó multi send')
+multi_send(m_files[:].tolist(), NUM_WORKERS, 1, 2)
+print('Terminó multi send')
+
+ruta = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\temps\\'
+files = []
+jsons = []
+for i in range(NUM_WORKERS):
+    file = np.load(ruta + 'n_files_{}.npy'.format(i), allow_pickle=True)
+    azu = np.load(ruta + 'n_jsons_{}.npy'.format(i), allow_pickle=True)
+    if file.size > 0 and azu.size > 0:
+        files.append(file)
+        jsons.append(azu)
+
+azure_files = np.concatenate(files[:], axis=0)
+azure_jsons = np.concatenate(jsons[:], axis=0)
+
+# PROCESSING
+y_min = 120
+y_max = 213
+x_min = 0
+x_max = 833
+
+filenames = []
+
+dnis = []
+tels = []
+mails = []
+nombres = []
+dirs = []
+distris = []
+ccs = []
+
+sco_dnis = []
+sco_tels = []
+sco_mails = []
+sco_nombres = []
+sco_dirs = []
+sco_distris = []
+sco_ccs = []
+
+azure_str_jsons = []
+
+for i in range(azure_files.size):
+    # Grabbing the file
+    # filename = m_files[i]
+    filename = azure_files[i]
+    name = filename.split('\\')
+    name = name[len(name) - 1]
+    name = name.split('.')[0]
+
+    c_x = int(m_cxs[i])
+    c_y = int(m_cys[i])
+
+    wi = m_widths[i]
+    hi = m_heights[i]
+
+    x_minimo = int(c_x - (wi / 2))
+    x_maximo = int(c_x + (wi / 2))
+    y_minimo = int(c_y - (hi / 2))
+    y_maximo = int(c_y + (hi / 2))
+
+    image = cv2.imread(filename)
+    filenames.append(name)
+
+    if (c_x == 9999 or c_y == 9999):
+        dnis.append("")
+        tels.append("")
+        mails.append("")
+        nombres.append("")
+        dirs.append("")
+        distris.append("")
+        ccs.append("")
+
+        sco_dnis.append(0.0)
+        sco_tels.append(0.0)
+        sco_mails.append(0.0)
+        sco_nombres.append(0.0)
+        sco_dirs.append(0.0)
+        sco_distris.append(0.0)
+        sco_ccs.append(0.0)
+    else:
+        print('{} . {}'.format(i, name))
+
+        cupon_areas = dni_rect_from_ce(c_x, c_y+y_min, cv2, image, traslation_dict, lines_dict)
+        # print('{}'.format(cupon_areas))
+        fields, scores = get_fields_from_json(azure_jsons[i], cupon_areas)
+
+        # Parsing numeric fields
+        dni, sdni = post_num_field(fields['dni'],scores['dni'],banned_field_dict,n_eqs)
+        tel, stel = post_num_field(fields['tel'],scores['tel'],banned_field_dict,n_eqs)
+        dni, tel = basic_field_clean(dni), basic_field_clean(tel)
+
+        # Parsing mail
+        mail, smail = post_num_field(fields['mail'],scores['mail'],banned_field_dict)
+        mail = basic_field_clean(mail)
+
+        # Parsing other fields
+        nomb1, snomb1 = post_num_field(fields['nomb_ape1'],scores['nomb_ape1'],banned_field_dict,separator=" ")
+        nomb2, snomb2 = post_num_field(fields['nomb_ape2'],scores['nomb_ape2'],banned_field_dict,separator=" ")
+        dire1, sdire1 = post_num_field(fields['dir1'],scores['dir1'],banned_field_dict,separator=" ")
+        dire2, sdire2 = post_num_field(fields['dir2'],scores['dir2'],banned_field_dict,separator=" ")
+        dist, sdist = post_num_field(fields['distrito'],scores['distrito'],banned_field_dict,separator=" ")
+        cc, scc = post_num_field(fields['cc'],scores['cc'],banned_field_dict,separator=" ")
+
+        nomb1 = basic_field_clean(nomb1)
+        nomb2 = basic_field_clean(nomb2)
+        dire1 = basic_field_clean(dire1)
+        dire2 = basic_field_clean(dire2)
+        dist = basic_field_clean(dist)
+        cc = basic_field_clean(cc)
+
+        # Concatenating two lines fields
+        nomb_ape, snomb_ape = nomb1+" "+nomb2, (snomb1+snomb2)/2
+        direccion, sdireccion = dire1+" "+dire2, (sdire1+sdire2)/2
+
+        # Last trying to get DNI
+        if sdni==0:
+            # print('{}'.format(post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")))
+            st, sc = post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")
+            dni = get_dni_from_line(st, n_eqs)
+            sdni = 0.0 if dni=="" else sc
+        # Last trying to get Tel
+        if stel==0:
+            # print('{}'.format(post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")))
+            st, sc = post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")
+            tel = get_tel_from_line(st, n_eqs)
+            stel = 0.0 if tel=="" else sc
+
+        # Showing fields
+        # print('DNI {} {}'.format(dni, sdni))
+        # print('TEL {} {}'.format(tel, stel))
+        # print('MAIL {} {}'.format(mail, smail))
+        # print('NOMB {} {}'.format(nomb_ape, snomb_ape))
+        # print('NOMB2 {} {}'.format(nomb2, snomb2))
+        # print('DIR {} {}'.format(direccion, sdireccion))
+        # print('DIR2 {} {}'.format(dire2, sdire2))
+        # print('DIST {} {}'.format(dist, sdist))
+        # print('CC {} {}'.format(cc, scc))
+
+        # Appending into arrays
+        dnis.append(dni)
+        tels.append(tel)
+        mails.append(mail)
+        nombres.append(nomb_ape)
+        dirs.append(direccion)
+        distris.append(dist)
+        ccs.append(cc)
+
+        sco_dnis.append(sdni)
+        sco_tels.append(stel)
+        sco_mails.append(smail)
+        sco_nombres.append(snomb_ape)
+        sco_dirs.append(sdireccion)
+        sco_distris.append(sdist)
+        sco_ccs.append(scc)
+
+        azure_str_jsons.append(json.dumps(azure_jsons[i]))
+
+print('Termino :D ')
+
+
+bd_azure = pd.DataFrame({'NombreArchivo': np.array(filenames)})
+# bd_azure['idCupon'] = np.arange(1000, 1000+np.array(dnis).size,1)
+bd_azure['DNI'] = np.array(dnis)
+bd_azure['AcertividadDNI'] = np.array(sco_dnis)
+
+bd_azure['Telefono'] = np.array(tels)
+bd_azure['AcertividadTelefono'] = np.array(sco_tels)
+
+bd_azure['NombreCompleto'] = np.array(nombres)
+bd_azure['AcertividadNombreCompleto'] = np.array(sco_nombres)
+
+bd_azure['Direccion'] = np.array(dirs)
+bd_azure['AcertividadDireccion'] = np.array(sco_dirs)
+
+bd_azure['Distrito'] = np.array(distris)
+bd_azure['AcertividadDistrito'] = np.array(sco_distris)
+
+bd_azure['Correo'] = np.array(mails)
+bd_azure['AcertividadCorreo'] = np.array(sco_mails)
+
+bd_azure['AzureJsonOCR'] = np.array(azure_str_jsons)
+
+bd_azure['idCampania'] = ID_CAMPANIA
+bd_azure['idUsuario'] = ID_USUARIO
+bd_azure['idEstado'] = 2
+# bd_azure['idBatch'] = int(dt_string)
+
+bd_azure.to_csv('azure_result/azure_result.csv', encoding='utf-8', index=False)
+print('Termino escritura')
+
+# dataframe
+dataPrueba = bd_azure.fillna('')
+
+# Corrección de tamaño de campos
+dataPrueba['DNI'] = dataPrueba['DNI'].apply(lambda x: x[:20])
+dataPrueba['Telefono'] = dataPrueba['Telefono'].apply(lambda x: x[:20])
+dataPrueba['NombreCompleto'] = dataPrueba['NombreCompleto'].apply(lambda x: x[:150])
+dataPrueba['Direccion'] = dataPrueba['Direccion'].apply(lambda x: x[:150])
+dataPrueba['Distrito'] = dataPrueba['Distrito'].apply(lambda x: x[:50])
+dataPrueba['Correo'] = dataPrueba['Correo'].apply(lambda x: x[:150])
+dataPrueba['AzureJsonOCR'] = dataPrueba['AzureJsonOCR'].apply(lambda x: x[:1600])
+
+
+cnxn = pyodbc.connect('Driver={SQL Server}; Server=192.168.2.55; Database=ClienteCupon; UID=usercupon;PWD=123456789', autocommit=True)
+crsr = cnxn.cursor()
+
+crsr.fast_executemany = False
+
+sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [NombreArchivo]=?;"
+params = [(dataPrueba.at[i,'DNI'],
+    dataPrueba.iloc[i]['AcertividadDNI'],
+    dataPrueba.at[i,'Telefono'],
+    dataPrueba.iloc[i]['AcertividadTelefono'],
+    dataPrueba.iloc[i]['NombreCompleto'],
+    dataPrueba.iloc[i]['AcertividadNombreCompleto'],
+    dataPrueba.iloc[i]['Direccion'],
+    dataPrueba.iloc[i]['AcertividadDireccion'],
+    dataPrueba.iloc[i]['Distrito'],
+    dataPrueba.iloc[i]['AcertividadDistrito'],
+    dataPrueba.iloc[i]['Correo'],
+    dataPrueba.iloc[i]['AcertividadCorreo'],
+    int(dataPrueba.iloc[i]['idCampania']),
+    int(dataPrueba.iloc[i]['idUsuario']),
+    int(dataPrueba.iloc[i]['idEstado']),
+    dataPrueba.iloc[i]['AzureJsonOCR'],
+    dataPrueba.at[i,'NombreArchivo']) for i in range(dataPrueba.shape[0])]
+
+t0 = time.time()
+crsr.executemany(sql, params)
+print(f'{time.time() - t0:.1f} seconds')
+
+# Calculo
+local_result = pd.read_csv('C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\local_result\\result.csv', dtype={'DNI':str, 'Telefono':str})
+# azure_result = pd.read_csv('C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\azure_result\\azure_result.csv')
+res=pd.merge(local_result , bd_azure, how='left', on='NombreArchivo',)
+res = res[['NombreArchivo','DNI_x','AcertividadDNI_x','DNI_y','AcertividadDNI_y','Telefono_x','AcertividadTelefono_x','Telefono_y','AcertividadTelefono_y']]
+res.rename(columns={
+                        'DNI_x':'DNI_local',
+                        'AcertividadDNI_x':'AcertividadDNI_local',
+                        'DNI_y':'DNI_azure',
+                        'AcertividadDNI_y':'AcertividadDNI_azure',
+                        'Telefono_x':'Telefono_local',
+                        'AcertividadTelefono_x':'AcertividadTelefono_local',
+                        'Telefono_y':'Telefono_azure',
+                        'AcertividadTelefono_y':'AcertividadTelefono_azure',
+                    },
+                 inplace=True)
+res.to_csv('azure_result/summary.csv', encoding='utf-8', index = False)
+
+print('Termino actualizacion en base de datos')
