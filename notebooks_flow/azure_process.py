@@ -72,7 +72,7 @@ eqs = {
 }
 
 banned_field_dict = ['DNI:','DNI','DN']+['Telefono:','Telefono']+['E-mail:']+['Nombres y Apellidos:']+['Direccion:']+['Distrito:']+['Centro Comercial:']
-n_eqs = {'%':'90',')':'',',':'','$':'5','f':'7','&':'6','+':'7','g':'9','l':'1','o':'0','y':'4','/':'1','.':'','-':''}
+n_eqs = {'%':'90',')':'',',':'','$':'5','f':'7','&':'6','+':'7','g':'9','l':'1','o':'0','O':'0','y':'4','/':'1','.':'','-':''}
 
 
 def center_of(bounding_box):
@@ -346,13 +346,13 @@ for i in range(azure_files.size):
         # Last trying to get DNI
         if sdni==0:
             # print('{}'.format(post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")))
-            st, sc = post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")
+            st, sc = post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator=" ")
             dni = get_dni_from_line(st, n_eqs)
             sdni = 0.0 if dni=="" else sc
         # Last trying to get Tel
         if stel==0:
             # print('{}'.format(post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")))
-            st, sc = post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")
+            st, sc = post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator=" ")
             tel = get_tel_from_line(st, n_eqs)
             stel = 0.0 if tel=="" else sc
 
