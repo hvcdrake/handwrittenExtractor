@@ -81,6 +81,17 @@ now = datetime.datetime.now()
 dt_string = now.strftime("%Y%m%d%H%M%S")
 logg = open('log_idbatch_{}.txt'.format(dt_string), "w+")
 
+
+def today_date():
+    '''
+    utils:
+    get the datetime of today
+    '''
+    date=datetime.datetime.now()
+    date=pd.to_datetime(date)
+    return date
+
+
 def ordering_cx(boxes_in, scores_in, classes_in):
     boxes = boxes_in.copy()
     scores = scores_in.copy()
@@ -598,7 +609,9 @@ if BD_SAVE_FLAG:
 else:
     print("BD_SAVE_FLAG set in False para Cupon")
 
+
 # Setting azure flag for th next process
+bd_cupones['FechaHora'] = today_date()
 bd_cupones['Azure'] = np.where(
     np.logical_and(
         np.logical_and(bd_cupones['DNI'].apply(len)==8, bd_cupones.AcertividadDNI>=ADMITED_THRESHOLD),
@@ -607,8 +620,9 @@ bd_cupones['Azure'] = np.where(
             bd_cupones.AcertividadTelefono>=ADMITED_THRESHOLD
             )
         ),
-    0,
+    1,
     1)
+
 
 bd_cupones.to_csv(RUTA_CSV + 'result.csv', encoding='utf-8', index=False)
 np.save(RUTA_AREAS + 'azure_flags', bd_cupones['Azure'].values)

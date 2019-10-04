@@ -78,7 +78,13 @@ eqs = {
 }
 
 banned_field_dict = ['DNI:','DNI','DN']+['Telefono:','Telefono']+['E-mail:']+['Nombres y Apellidos:']+['Direccion:']+['Distrito:']+['Centro Comercial:']
-n_eqs = {'%':'90',')':'',',':'','$':'5','f':'7','&':'6','+':'7','g':'9','l':'1','o':'0','O':'0','y':'4','/':'1','.':'','-':''}
+n_eqs = {
+    '%': '90',
+    ')': '1',
+    ',': '',
+    'S': '5',
+    '$':'5','f':'7','&':'6','+':'7','g':'9','l':'1','o':'0','O':'0','y':'4','/':'1','.':'','-':''
+    }
 
 
 def center_of(bounding_box):
@@ -86,13 +92,13 @@ def center_of(bounding_box):
     ys = np.array([bounding_box[1],bounding_box[3],bounding_box[5],bounding_box[7]])
     return int(xs.sum() / xs.size) , int(ys.sum() / ys.size)
 
+
 def dni_rect_from_ce(x, y, cv2_v, img, areas_dict, lines_dict):
     w = img.shape[1]
     h = img.shape[0]
 
     color = (0, 0, 255)
     thicknes = 2
-
     fields = []
     res_dict = {}
 
@@ -124,10 +130,12 @@ def dni_rect_from_ce(x, y, cv2_v, img, areas_dict, lines_dict):
     # return res_dict['dni'][0], res_dict['dni'][1], res_dict['tel'][0], res_dict['tel'][1]
     return res_dict
 
+
 def is_in_box(center, top_left_point, bottom_right_point):
     x = center[0] > top_left_point[0] and center[0] < bottom_right_point[0]
     y = center[1] > top_left_point[1] and center[1] < bottom_right_point[1]
     return (x and y)
+
 
 def get_fields_from_json(azure_json, areas_dict):
     fields = {}
@@ -177,9 +185,12 @@ def basic_digit_clean(string, num_eqs):
 
 def basic_field_clean(string):
     a = string.find(':')
-    if a >= 0:
-        return string[a + 1:]
-    return string
+    if a == len(string)-1:
+        return string[:-1]
+    else:
+        if a >= 0:
+            return string[a + 1:]
+        return string
 
 
 def post_num_field(l_field, l_score, banned, num_eqs={}, separator=""):
@@ -196,30 +207,40 @@ def post_num_field(l_field, l_score, banned, num_eqs={}, separator=""):
                 # print('{}'.format(l_score[i][j]))
                 score += eqs[l_score[i][j]]
     value = basic_digit_clean(value, num_eqs)
-    return (value.strip(), score/ct) if ct > 0 else (value, 0.0)
+    return (value.strip(), score / ct) if ct > 0 else (value, 0.0)
 
 
 def get_dni_from_line(string, num_eqs):
     a = string.find('DNI:')
     b = string.find('Telefono:')
-    if a>=0 and b>=0:
+    if a >= 0 and b >= 0:
         return basic_digit_clean(string[a+len('DNI:'):b],num_eqs)
     a = string.find('DNI')
     b = string.find('Telefono')
-    if a>=0 and b>=0:
+    if a >= 0 and b >= 0:
         return basic_digit_clean(string[a+len('DNI'):b],num_eqs)
     else:
         return ""
 
+
 def get_tel_from_line(string, num_eqs):
     b = string.find('Telefono:')
-    if b>=0:
+    if b >= 0:
         return basic_digit_clean(string[b+len('Telefono:'):],num_eqs)
     b = string.find('Telefono')
-    if b>=0:
+    if b >= 0:
         return basic_digit_clean(string[b+len('Telefono'):],num_eqs)
     else:
         return ""
+
+
+def clean_letters(word):
+    ret = ""
+    for c in word:
+        if ('0' <= c and c <= '9'):
+            ret += str(c)
+    return ret
+
 
 # Getting arrays
 m_widths = np.genfromtxt(ARRAYS_PATH + 'widths.txt')
@@ -232,7 +253,7 @@ m_azure_flags = np.load(ARRAYS_PATH + 'azure_flags.npy')
 
 NUM_WORKERS = 10
 print('Empezó multi send')
-multi_send(m_files[:].tolist(), NUM_WORKERS, 1, 2)
+multi_send(m_files[:].tolist(), NUM_WORKERS, 1, 1)
 print('Terminó multi send')
 
 
@@ -324,11 +345,11 @@ for i in range(azure_files.size):
         # Parsing numeric fields
         dni, sdni = post_num_field(fields['dni'],scores['dni'],banned_field_dict,n_eqs)
         tel, stel = post_num_field(fields['tel'],scores['tel'],banned_field_dict,n_eqs)
-        dni, tel = basic_field_clean(dni), basic_field_clean(tel)
+        dni, tel = basic_field_clean(dni).strip(), basic_field_clean(tel).strip()
 
         # Parsing mail
         mail, smail = post_num_field(fields['mail'],scores['mail'],banned_field_dict)
-        mail = basic_field_clean(mail)
+        mail = basic_field_clean(mail).lower().strip()
 
         # Parsing other fields
         nomb1, snomb1 = post_num_field(fields['nomb_ape1'],scores['nomb_ape1'],banned_field_dict,separator=" ")
@@ -338,12 +359,12 @@ for i in range(azure_files.size):
         dist, sdist = post_num_field(fields['distrito'],scores['distrito'],banned_field_dict,separator=" ")
         cc, scc = post_num_field(fields['cc'],scores['cc'],banned_field_dict,separator=" ")
 
-        nomb1 = basic_field_clean(nomb1)
-        nomb2 = basic_field_clean(nomb2)
-        dire1 = basic_field_clean(dire1)
-        dire2 = basic_field_clean(dire2)
-        dist = basic_field_clean(dist)
-        cc = basic_field_clean(cc)
+        nomb1 = basic_field_clean(nomb1).strip()
+        nomb2 = basic_field_clean(nomb2).strip()
+        dire1 = basic_field_clean(dire1).strip()
+        dire2 = basic_field_clean(dire2).strip()
+        dist = basic_field_clean(dist).strip()
+        cc = basic_field_clean(cc).strip()
 
         # Concatenating two lines fields
         nomb_ape, snomb_ape = nomb1+" "+nomb2, (snomb1+snomb2)/2
@@ -362,6 +383,8 @@ for i in range(azure_files.size):
             tel = get_tel_from_line(st, n_eqs)
             stel = 0.0 if tel=="" else sc
 
+        dni = dni.replace(" ","")
+        tel = tel.replace(" ","")
         # Showing fields
         # print('DNI {} {}'.format(dni, sdni))
         # print('TEL {} {}'.format(tel, stel))
@@ -398,6 +421,11 @@ print('Termino :D ')
 bd_azure = pd.DataFrame({'NombreArchivo': np.array(filenames)})
 # bd_azure['idCupon'] = np.arange(1000, 1000+np.array(dnis).size,1)
 bd_azure['DNI'] = np.array(dnis)
+bd_azure['DNI'] = np.where(bd_azure['DNI'].apply(len) >= 14,
+    bd_azure['DNI'].apply(lambda x : clean_letters(x)[:8]),
+    bd_azure['DNI']
+    )
+
 bd_azure['AcertividadDNI'] = np.array(sco_dnis)
 
 bd_azure['Telefono'] = np.array(tels)
@@ -413,6 +441,8 @@ bd_azure['Distrito'] = np.array(distris)
 bd_azure['AcertividadDistrito'] = np.array(sco_distris)
 
 bd_azure['Correo'] = np.array(mails)
+# bd_azure['Correo'] = bd_azure['Correo'].apply(str.lower)
+
 bd_azure['AcertividadCorreo'] = np.array(sco_mails)
 
 bd_azure['AzureJsonOCR'] = np.array(azure_str_jsons)
