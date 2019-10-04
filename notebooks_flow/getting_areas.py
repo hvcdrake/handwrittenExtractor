@@ -8,10 +8,12 @@ import datetime
 import math
 
 
+WORK_DIRECTORY = os.getcwd()
 INPUT = True
-ruta_input = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\input'
+# ruta_input = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\input'
+# ruta_campania = 'C:\\git\\cuponesWong\\CuponesWong\\data\\escaneos\\marzo_compras_2018'
+ruta_input = WORK_DIRECTORY + '\\input'
 ruta_campania = 'C:\\git\\cuponesWong\\CuponesWong\\data\\escaneos\\marzo_compras_2018'
-
 
 # SIFT initialization
 detector = cv2.xfeatures2d.SIFT_create()

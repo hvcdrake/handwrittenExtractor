@@ -24,8 +24,8 @@ class YOLO(object):
         # "model_path": 'model_data/yolo.h5',
         # "model_path": 'model_data/mnist1s-ep090-loss2.293-val_loss2.287.h5',
         # "model_path": 'model_data/mnist-5k-8s-ep087-loss21.463-val_loss21.241.h5',
-        # "model_path": 'model_data/mnist-8k-8s-ep096-loss19.836-val_loss19.637.h5', # Máximo 12.90%
-        "model_path": 'model_data/newtrain_final_val_16.7.h5', # New training
+        "model_path": 'model_data/mnist-8k-8s-ep096-loss19.836-val_loss19.637.h5', # Máximo 12.90%
+        # "model_path": 'model_data/newtrain_final_val_16.7.h5', # New training
         "anchors_path": 'model_data/yolo_anchors.txt',
         # "classes_path": 'model_data/coco_classes.txt',
         "classes_path": 'model_data/mnist_classes.txt',

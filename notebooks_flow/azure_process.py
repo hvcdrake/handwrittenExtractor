@@ -9,10 +9,16 @@ import sqlalchemy as sa
 import pyodbc
 import time
 from paralel_send import multi_send
+from os import getcwd
 
 
 ID_CAMPANIA = 3
 ID_USUARIO = 1
+WORK_DIRECTORY = getcwd()
+ARRAYS_PATH = WORK_DIRECTORY + '\\areas_result\\'
+TMP_PATH = WORK_DIRECTORY + '\\temps\\'
+LOCAL_PATH = WORK_DIRECTORY + '\\local_result\\'
+
 
 # MARZO COMPRAS
 traslation_dict = {
@@ -216,14 +222,12 @@ def get_tel_from_line(string, num_eqs):
         return ""
 
 # Getting arrays
-ruta = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\areas_result\\'
-
-m_widths = np.genfromtxt(ruta + 'widths.txt')
-m_heights = np.genfromtxt(ruta + 'heights.txt')
-m_cxs = np.genfromtxt(ruta + 'cxs.txt')
-m_cys = np.genfromtxt(ruta + 'cys.txt')
-m_files = np.load(ruta + 'paths.npy')
-m_azure_flags = np.load(ruta + 'azure_flags.npy')
+m_widths = np.genfromtxt(ARRAYS_PATH + 'widths.txt')
+m_heights = np.genfromtxt(ARRAYS_PATH + 'heights.txt')
+m_cxs = np.genfromtxt(ARRAYS_PATH + 'cxs.txt')
+m_cys = np.genfromtxt(ARRAYS_PATH + 'cys.txt')
+m_files = np.load(ARRAYS_PATH + 'paths.npy')
+m_azure_flags = np.load(ARRAYS_PATH + 'azure_flags.npy')
 
 
 NUM_WORKERS = 10
@@ -231,12 +235,12 @@ print('Empezó multi send')
 multi_send(m_files[:].tolist(), NUM_WORKERS, 1, 2)
 print('Terminó multi send')
 
-ruta = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\temps\\'
+
 files = []
 jsons = []
 for i in range(NUM_WORKERS):
-    file = np.load(ruta + 'n_files_{}.npy'.format(i), allow_pickle=True)
-    azu = np.load(ruta + 'n_jsons_{}.npy'.format(i), allow_pickle=True)
+    file = np.load(TMP_PATH + 'n_files_{}.npy'.format(i), allow_pickle=True)
+    azu = np.load(TMP_PATH + 'n_jsons_{}.npy'.format(i), allow_pickle=True)
     if file.size > 0 and azu.size > 0:
         files.append(file)
         jsons.append(azu)
@@ -308,6 +312,8 @@ for i in range(azure_files.size):
         sco_dirs.append(0.0)
         sco_distris.append(0.0)
         sco_ccs.append(0.0)
+
+        azure_str_jsons.append("")
     else:
         print('{} . {}'.format(i, name))
 
@@ -461,8 +467,7 @@ crsr.executemany(sql, params)
 print(f'{time.time() - t0:.1f} seconds')
 
 # Calculo
-local_result = pd.read_csv('C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\local_result\\result.csv', dtype={'DNI':str, 'Telefono':str})
-# azure_result = pd.read_csv('C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\azure_result\\azure_result.csv')
+local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})# azure_result = pd.read_csv('C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\azure_result\\azure_result.csv')
 res=pd.merge(local_result , bd_azure, how='left', on='NombreArchivo',)
 res = res[['NombreArchivo','DNI_x','AcertividadDNI_x','DNI_y','AcertividadDNI_y','Telefono_x','AcertividadTelefono_x','Telefono_y','AcertividadTelefono_y']]
 res.rename(columns={

@@ -10,6 +10,9 @@ from scipy.spatial import distance
 import pandas as pd
 from yolo import YOLO
 import json
+from os import getcwd
+from os import path
+from os import pardir
 
 # Importing second model libraries
 from keras.models import Sequential
@@ -62,15 +65,21 @@ traslation_dict = {
 }
 '''
 
-logg = open('loggin.txt', 'a+')
-RUTA_AREAS = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\areas_result\\'
-RUTA_CSV = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\local_result\\'
+WORK_DIRECTORY = getcwd()
+PARENT_DIRECTORY = path.abspath(path.join(WORK_DIRECTORY, pardir))
+
+RUTA_AREAS = PARENT_DIRECTORY + '\\areas_result\\'
+RUTA_CSV = PARENT_DIRECTORY + '\\local_result\\'
 BD_SAVE_FLAG = True
 ADMITED_THRESHOLD = 84.00
 IMPROVEMENT_TRESHHOLD = 94.00
 ID_CAMPANIA = 3
 ID_USUARIO = 1
 
+# Getting the batch id
+now = datetime.datetime.now()
+dt_string = now.strftime("%Y%m%d%H%M%S")
+logg = open('log_idbatch_{}.txt'.format(dt_string), "w+")
 
 def ordering_cx(boxes_in, scores_in, classes_in):
     boxes = boxes_in.copy()
@@ -551,9 +560,6 @@ for i in range(np_res_dni_scores.size):
                  }
     local_jsons.append(json.dumps(local_dict))
 
-# Getting the batch id
-now = datetime.datetime.now()
-dt_string = now.strftime("%Y%m%d%H%M%S")
 
 # Building data frame
 bd_cupones = pd.DataFrame({'NombreArchivo':np_res_filenames})
@@ -575,11 +581,13 @@ bd_cupones['LocalJsonOCR'] = bd_cupones['LocalJsonOCR'].apply(lambda x: x[:1600]
 
 engine = sa.create_engine('mssql+pyodbc://usercupon:123456789@192.168.2.55/ClienteCupon?driver=SQL+Server+Native+Client+11.0') # SQL aut
 
+
 if BD_SAVE_FLAG:
     # Inserción a la tabla cupon
     t0 = time.time()
     bd_cupones.to_sql('Cupon', engine, if_exists='append', index=False, chunksize=200)
-    print(f'Inserción Cupon finalizada en {time.time() - t0:.1f} seconds')
+    # print(f"Inserción Cupon finalizada en {time.time() - t0:.1f} seconds")
+    print("Inserción Cupon finalizada en {:.1f} seconds".format(time.time()-t0))
     logg.write("-- {} : Fin escritura en base de datos".format(datetime.datetime.now(),name)+'\n')
     # Getting the ids from the database // TODO
     time.sleep(1)
@@ -611,7 +619,8 @@ if BD_SAVE_FLAG:
     bd_cupones = bd_cupones[bd_cupones.Azure == 1].iloc[:, :-1]
     t0 = time.time()
     bd_cupones.to_sql('Logcupon', engine, if_exists='append', index=False, chunksize=200)
-    print(f'Inserción Logcupon finalizada en {time.time() - t0:.1f} seconds')
+    # print(f'Inserción Logcupon finalizada en {time.time() - t0:.1f} seconds')
+    print("Inserción Logcupon finalizada en {:.1f} seconds".format(time.time()-t0))
 else:
     print("BD_SAVE_FLAG set in False para Logcupon")
 
