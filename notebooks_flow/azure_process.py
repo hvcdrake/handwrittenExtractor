@@ -11,15 +11,11 @@ import time
 from paralel_send import multi_send
 from os import getcwd
 
-
-ID_CAMPANIA = 3
-ID_USUARIO = 1
-WORK_DIRECTORY = getcwd()
-ARRAYS_PATH = WORK_DIRECTORY + '\\areas_result\\'
-TMP_PATH = WORK_DIRECTORY + '\\temps\\'
-LOCAL_PATH = WORK_DIRECTORY + '\\local_result\\'
+import argparse
+import general_utils
 
 
+'''
 # MARZO COMPRAS
 traslation_dict = {
     'dni':{'tras_x':27,'tras_y':-44,'width':340,'height':75},
@@ -36,7 +32,7 @@ traslation_dict = {
 lines_dict = {
     'dni_tel':{'tras_x':-40,'tras_y':-45,'width':820,'height':80}
 }
-''' 
+
 ## CAMIONETA TOYOTA 2018
 traslation_dict = {
     'nomb_ape1':{'tras_x':210,'tras_y':-140,'width':540,'height':60},
@@ -53,7 +49,6 @@ traslation_dict = {
 lines_dict = {
     'dni_tel':{'tras_x':-40,'tras_y':-40,'width':800,'height':55}
 }
-'''
 
 # MUNDIAL MAMA
 traslation_dict = {
@@ -71,6 +66,27 @@ traslation_dict = {
 lines_dict = {
     'dni_tel':{'tras_x':-40,'tras_y':-45,'width':820,'height':80}
 }
+'''
+
+# construct the argument parser the unique param is the campaign id
+ap = argparse.ArgumentParser()
+ap.add_argument("-c", "--campaign", required=True, help="Identificador de la campaña a procesar")
+args = vars(ap.parse_args())
+
+ID_CAMPANIA = int(args['campaign'])
+ID_USUARIO = 1
+WORK_DIRECTORY = getcwd()
+ARRAYS_PATH = WORK_DIRECTORY + '\\areas_result\\'
+TMP_PATH = WORK_DIRECTORY + '\\temps\\'
+LOCAL_PATH = WORK_DIRECTORY + '\\local_result\\'
+
+# Info about the params file
+p = 'params/campaigns'
+camp_file = general_utils.get_conf_file_of_camp(p, str(args['campaign']))
+print("[INFO] Cargando archivo de parámetros: {}".format(camp_file))
+dni_area = general_utils.get_param_from_file(camp_file, 'dni_search_area')
+traslation_dict = general_utils.get_param_from_file(camp_file, 'traslation_dict')
+lines_dict = general_utils.get_param_from_file(camp_file, 'lines_dict')
 
 eqs = {
     'Normal': 90.00,
@@ -270,10 +286,10 @@ azure_files = np.concatenate(files[:], axis=0)
 azure_jsons = np.concatenate(jsons[:], axis=0)
 
 # PROCESSING
-y_min = 120
-y_max = 213
-x_min = 0
-x_max = 833
+y_min = dni_area['y_min']
+y_max = dni_area['y_max']
+x_min = dni_area['x_min']
+x_max = dni_area['x_max']
 
 filenames = []
 

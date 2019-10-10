@@ -4,6 +4,8 @@ import time
 import json
 import numpy as np
 import datetime
+import os
+
 
 # URL variables
 # vision_base_url = "https://eastus2.api.cognitive.microsoft.com/vision/v2.0/"
@@ -77,8 +79,8 @@ def send_azure(paths, sleep_after_time, await_before_ask_time, worker_id):
 
     try:
         # Fetching in paths
-        for path in paths:
-            print("Worker {} reading {}".format(worker_id, path.split('\\')[-1]))
+        for i, path in enumerate(paths):
+            print("Worker {}: Reading {}.{}".format(worker_id, i, path.split('\\')[-1]))
             image = open(path, "rb")
             d = image.read()
 
@@ -98,7 +100,7 @@ def send_azure(paths, sleep_after_time, await_before_ask_time, worker_id):
                     operation_url, headers=headers)
                 analysis = response_final.json()
                 debug_str = str(analysis)[:25] if len(str(analysis)) >= 25 else str(analysis)
-                print('Worker:{} status:{}'.format(worker_id, debug_str))
+                print('Worker {}: Status:{}'.format(worker_id, debug_str))
 
                 if ('recognitionResult' in analysis):
                     poll = False
@@ -109,22 +111,38 @@ def send_azure(paths, sleep_after_time, await_before_ask_time, worker_id):
             files.append(path)
             jsons.append(obj)
             image.close()
-            print("Worker {} finish: {} and waiting for {}".format(worker_id, path.split('\\')[-1], sleep_after_time))
+            print("Worker {}: Finished {}.{} and waiting for {}".format(worker_id, i, path.split('\\')[-1], sleep_after_time))
+
+            if (i % 300) == 0:
+                # print("Worker {}: Pre-saving")
+                # convirtiendo a nunmpy arrays
+                n_files = np.array(files)
+                n_jsons = np.array(jsons)
+                # Saving nunmpy arrays
+                np.save('temps/n_files_{}_nf'.format(worker_id), n_files)
+                np.save('temps/n_jsons_{}_nf'.format(worker_id), n_jsons)
             time.sleep(sleep_after_time)
+
         # convirtiendo a nunmpy arrays
         n_files = np.array(files)
         n_jsons = np.array(jsons)
-
-        # Saving nunmpy arrays
+        # Saving numpy arrays
         np.save('temps/n_files_{}'.format(worker_id), n_files)
         np.save('temps/n_jsons_{}'.format(worker_id), n_jsons)
+
+        if os.path.exists('temps/n_files_{}.npy'.format(worker_id)) and os.path.exists('temps/n_files_{}_nf.npy'.format(worker_id)):
+            print("Worker {}: Final f deleting")
+            os.remove('temps/n_files_{}_nf.npy'.format(worker_id))
+        if os.path.exists('temps/n_jsons_{}.npy'.format(worker_id)) and os.path.exists('temps/n_jsons_{}_nf.npy'.format(worker_id)):
+            os.remove('temps/n_jsons_{}_nf.npy'.format(worker_id))
+            print("Worker {}: Final js deleting")
+
     except Exception as e:
         print('Worker {}: .Error: {}'.format(worker_id, e))
     finally:
         # Close Close
         # image.close()
         print('End Worker {} in {}'.format(worker_id, datetime.datetime.now()))
-
 
 # print('Start multi send')
 # multi_send(files[:11], 20, 60, 60)

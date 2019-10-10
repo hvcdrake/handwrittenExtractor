@@ -6,6 +6,9 @@ import datetime
 import numpy as np
 import datetime
 import math
+import argparse
+
+import general_utils
 
 
 WORK_DIRECTORY = os.getcwd()
@@ -14,6 +17,18 @@ INPUT = True
 # ruta_campania = 'C:\\git\\cuponesWong\\CuponesWong\\data\\escaneos\\marzo_compras_2018'
 ruta_input = WORK_DIRECTORY + '\\input'
 ruta_campania = 'C:\\git\\cuponesWong\\CuponesWong\\data\\escaneos\\marzo_compras_2018'
+
+
+# construct the argument parser the unique param is the campaign id
+ap = argparse.ArgumentParser()
+ap.add_argument("-c", "--campaign", required=True, help="Identificador de la campaña a procesar")
+args = vars(ap.parse_args())
+
+# Info about the params file
+p = 'params/campaigns'
+camp_file = general_utils.get_conf_file_of_camp(p, str(args['campaign']))
+print("[INFO] Cargando archivo de parámetros: {}".format(camp_file))
+dni_area = general_utils.get_param_from_file(camp_file, 'dni_search_area')
 
 # SIFT initialization
 detector = cv2.xfeatures2d.SIFT_create()
@@ -52,10 +67,14 @@ else:
 
 
 # 1 Extracción del area de forma estática
-y_min = 120
-y_max = 213
-x_min = 0
-x_max = 833
+# y_min = 120
+# y_max = 213
+# x_min = 0
+# x_max = 833
+y_min = dni_area['y_min']
+y_max = dni_area['y_max']
+x_min = dni_area['x_min']
+x_max = dni_area['x_max']
 
 falses = 0
 
@@ -75,8 +94,12 @@ for filepath in files_lista:
 
     # Preprocessing section
     image = cv2.imread(filepath)
-    print('Reading {}'.format(filepath))
+    # print('Reading {}'.format(filepath))
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # print('{}'.format(image.shape))
+    y_max = image.shape[0] if y_max > image.shape[0] else y_max
+    x_max = image.shape[1] if x_max > image.shape[1] else x_max
+
     sift_roi = gray[y_min:y_max, x_min:x_max]
     sift_roi = cv2.adaptiveThreshold(sift_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, 11)
 
@@ -133,7 +156,7 @@ for filepath in files_lista:
 
         h_lista.append(y_maximo - y_minimo)
         w_lista.append(x_maximo - x_minimo)
-        p_lista.append([(x0,y0), (x1,y1), (x2,y2), (x3,y3)])
+        p_lista.append([(x0, y0), (x1, y1), (x2, y2), (x3, y3)])
         c_x_lista.append(c_x)
         c_y_lista.append(c_y)
         paths_lista.append(filepath)
@@ -149,7 +172,6 @@ for filepath in files_lista:
     # cv2.imshow("Gray", gray)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
-print("Terminó :D. Fin:{}. Total:{}".format(datetime.datetime.now(), falses))
 
 # convirtiendo a nunmpy arrays
 n_widths = np.array(w_lista)
@@ -166,3 +188,5 @@ np.save('areas_result/points', n_points)
 np.savetxt('areas_result/cxs.txt', n_cxs)
 np.savetxt('areas_result/cys.txt', n_cys)
 np.save('areas_result/paths', n_paths)
+
+print("Terminó :D. Fin:{}. Total:{}".format(datetime.datetime.now(), falses))

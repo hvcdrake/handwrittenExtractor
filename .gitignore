@@ -110,3 +110,5 @@ notebooks_flow/azure_result/
 notebooks_flow/input/
 notebooks_flow/local_result/
 notebooks_flow/temps/
+notebooks_flow/temps_fail/
+notebooks_flow/yolo/*.txt

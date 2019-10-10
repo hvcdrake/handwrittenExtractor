@@ -25,6 +25,24 @@ import sqlalchemy as sa
 import pyodbc
 import time
 
+sys.path.append("..")
+import general_utils
+
+
+# construct the argument parser the unique param is the campaign id
+ap = argparse.ArgumentParser()
+ap.add_argument("-c", "--campaign", required=True, help="Identificador de la campaña a procesar")
+args = vars(ap.parse_args())
+
+# Info about the params file
+p = '../params/campaigns'
+camp_file = general_utils.get_conf_file_of_camp(p, str(args['campaign']))
+print("[INFO] Cargando archivo de parámetros: {}".format(camp_file))
+dni_area = general_utils.get_param_from_file('../' + camp_file, 'dni_search_area')
+traslation_dict = general_utils.get_param_from_file('../' + camp_file, 'traslation_dict')
+# print('{}'.format(dni_area))
+
+'''
  ## MARZO COMPRAS
 traslation_dict = {
     'dni':{'tras_x':27,'tras_y':-44,'width':340,'height':75},
@@ -37,7 +55,6 @@ traslation_dict = {
     'distrito':{'tras_x':70,'tras_y':127,'width':800,'height':65},
     'cc':{'tras_x':200,'tras_y':240,'width':800,'height':65}
 }
-'''
 ## CAMIONETA TOYOTA 2018
 traslation_dict = {
     'nomb_ape1':{'tras_x':210,'tras_y':-140,'width':540,'height':60},
@@ -50,7 +67,6 @@ traslation_dict = {
     'mail':{'tras_x':60,'tras_y':152,'width':800,'height':50},
     'cc':{'tras_x':200,'tras_y':198,'width':800,'height':50}
 }
-
 # MUNDIAL MAMA
 traslation_dict = {
     'dni':{'tras_x':27,'tras_y':-44,'width':340,'height':75},
@@ -73,7 +89,7 @@ RUTA_CSV = PARENT_DIRECTORY + '\\local_result\\'
 BD_SAVE_FLAG = True
 ADMITED_THRESHOLD = 84.00
 IMPROVEMENT_TRESHHOLD = 94.00
-ID_CAMPANIA = 3
+ID_CAMPANIA = str(args['campaign'])
 ID_USUARIO = 1
 
 # Getting the batch id
@@ -87,8 +103,8 @@ def today_date():
     utils:
     get the datetime of today
     '''
-    date=datetime.datetime.now()
-    date=pd.to_datetime(date)
+    date = datetime.datetime.now()
+    date = pd.to_datetime(date)
     return date
 
 
@@ -360,10 +376,14 @@ print("-- {} : Areas leidas y cargadas".format(datetime.datetime.now()))
 logg.write("-- {} : Areas leidas y cargadas".format(datetime.datetime.now())+'\n')
 
 # 1 PROCESSING
-y_min = 120
-y_max = 213
-x_min = 0
-x_max = 833
+# y_min = 120
+# y_max = 213
+# x_min = 0
+# x_max = 833
+y_min = dni_area['y_min']
+y_max = dni_area['y_max']
+x_min = dni_area['x_min']
+x_max = dni_area['x_max']
 
 res_filenames = []
 
@@ -380,7 +400,7 @@ res_cel_boxes = []
 cel_areas = []
 
 print("-- {} : Empezó PROCESSING".format(datetime.datetime.now()))
-logg.write("-- {} : Empezó PROCESSING".format(datetime.datetime.now())+'\n')
+logg.write("-- {} : Empezó PROCESSING".format(datetime.datetime.now()) + '\n')
 # Calculando el arreglo de arhivos correctos
 # checked_files = np.delete(n_paths, (np.where(n_paths==failed_files))[1])
 # sample = np.take(checked_files,np.random.randint(0,checked_files.size,200))
