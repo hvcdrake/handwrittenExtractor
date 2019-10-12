@@ -196,11 +196,11 @@ def dni_rect_from_ce(x, y, cv2_v, img, areas_dict, lines_dict):
         tras_vector = np.array([areas_dict[key]['tras_x'], areas_dict[key]['tras_y']])
         point = np.array([x, y]) + tras_vector
         point_2 = point + np.array([areas_dict[key]['width'], areas_dict[key]['height']])
-        
+
         point = np.where(point<=0,0,point)
         point_2[0] = w if point_2[0]>= w else point_2[0]
         point_2[1] = h if point_2[1]>= h else point_2[1]
-        
+
         cv2_v.rectangle(img,(point[0],point[1]),(point_2[0],point_2[1]),color,thicknes)
         res_dict[key] = (point, point_2)
         # print('{} {}'.format(point,point_2))
@@ -232,21 +232,21 @@ def deleting_horizontal_lines(cv2_v, frame):
     mean_c = cv2_v.adaptiveThreshold(frame, 255, cv2_v.ADAPTIVE_THRESH_MEAN_C, cv2_v.THRESH_BINARY_INV, 15, 12)
     # cv2_v.imshow("dniGrayLinesSec", dniGrayLinesSec)
     # cv2_v.imshow("mean_c", mean_c)
-            
+
     ver = mean_c.copy()
     # ver_struc3 = cv2.getStructuringElement(cv2.MORPH_RECT,(1, 3))
-    ver_struc4 = cv2_v.getStructuringElement(cv2_v.MORPH_RECT,(1, 4))
+    ver_struc4 = cv2_v.getStructuringElement(cv2_v.MORPH_RECT, (1, 4))
     # ver_struc5 = cv2.getStructuringElement(cv2.MORPH_RECT,(1, 5))
-    
+
     '''
     ver33 = cv2.erode(ver.copy(),ver_struc3,iterations = 1)
     ver33 = cv2.dilate(ver33,ver_struc3,iterations = 1)
     cv2.imshow("ver33", ver33)
     '''
-    ver44 = cv2_v.erode(ver.copy(),ver_struc4,iterations = 1)
-    ver44 = cv2_v.dilate(ver44,ver_struc4,iterations = 1)
+    ver44 = cv2_v.erode(ver.copy(), ver_struc4, iterations=1)
+    ver44 = cv2_v.dilate(ver44, ver_struc4, iterations=1)
     # cv2_v.imshow("ver44", ver44)
-    
+
     hor_struc4 = cv2_v.getStructuringElement(cv2_v.MORPH_RECT,(4, 1))
     ver44_close = cv2_v.morphologyEx(ver44.copy(), cv2_v.MORPH_CLOSE, hor_struc4)
     # cv2_v.imshow("ver44_close", ver44_close)
@@ -260,11 +260,11 @@ def stringfy(array):
 
 def clasification_by_cnn(frame, boxes, cv2_v):
     images = []
-    boxes = np.where(boxes<0,0,boxes).astype(int)
+    boxes = np.where(boxes < 0, 0, boxes).astype(int)
     # print('Shhhappee {}'.format(frame.shape))
     delta_x = 5
     delta_y = 5
-    
+
     for i in range(boxes.shape[0]):
         y_min = boxes[i][0] if (boxes[i][0])>0 else 0
         y_max = boxes[i][2]+delta_y if (boxes[i][2]+delta_y)<frame.shape[0] else frame.shape[0]
@@ -311,7 +311,7 @@ def improve_num(classes, scores, cnn_preds, threshold):
 
 
 # Initiating YOLO model class
-d = {'image':True}
+d = {'image': True}
 yolo = YOLO(**d)
 
 # Loading second model
@@ -372,6 +372,10 @@ m_cxs = np.genfromtxt(RUTA_AREAS+'cxs.txt')
 m_cys = np.genfromtxt(RUTA_AREAS+'cys.txt')
 m_files = np.load(RUTA_AREAS+'paths.npy')
 
+# Loading muestra numpy arrays
+areas_r = pd.read_csv(RUTA_AREAS + 'areas.csv')
+areas_r = areas_r.fillna('')
+
 print("-- {} : Areas leidas y cargadas".format(datetime.datetime.now()))
 logg.write("-- {} : Areas leidas y cargadas".format(datetime.datetime.now())+'\n')
 
@@ -405,28 +409,40 @@ logg.write("-- {} : Empezó PROCESSING".format(datetime.datetime.now()) + '\n')
 # checked_files = np.delete(n_paths, (np.where(n_paths==failed_files))[1])
 # sample = np.take(checked_files,np.random.randint(0,checked_files.size,200))
 
-for i in range(m_files.size):
+# for i in range(m_files.size):
+for i in range(areas_r.path.values.size):
     # Grabbing the file
     '''
     filename = failed_files[i][0]
     c_x = int(failed_cxs[i][0])
     c_y = int(failed_cys[i][0])
     '''
-    filename = m_files[i]
+
+    # filename = m_files[i]
+    # filename = areas_r.iloc[i, 3]
+    filename = areas_r.path.values[i]
     name = filename.split('\\')
     name = name[len(name) - 1]
     name = name.split('.')[0]
 
-    c_x = int(m_cxs[i])
-    c_y = int(m_cys[i])
+    # c_x = int(m_cxs[i])
+    # c_y = int(m_cys[i])
+    # c_x = int(areas_r.iloc[i, 0])
+    # c_y = int(areas_r.iloc[i, 1])
+    c_x = int(areas_r.cx.values[i])
+    c_y = int(areas_r.cy.values[i])
 
-    wi = m_widths[i]
-    hi = m_heights[i]
+    # wi = m_widths[i]
+    # hi = m_heights[i]
+    # wi = areas_r.iloc[i, 4]
+    # hi = areas_r.iloc[i, 2]
+    wi = areas_r.width.values[i]
+    hi = areas_r.height.values[i]
 
-    x_minimo = int(c_x-(wi/2))
-    x_maximo = int(c_x+(wi/2))
-    y_minimo = int(c_y-(hi/2))
-    y_maximo = int(c_y+(hi/2))
+    x_minimo = int(c_x - (wi / 2))
+    x_maximo = int(c_x + (wi / 2))
+    y_minimo = int(c_y - (hi / 2))
+    y_maximo = int(c_y + (hi / 2))
 
     image = cv2.imread(filename)
     frame = image.copy()
@@ -459,7 +475,7 @@ for i in range(m_files.size):
             # Filtering erronues boxes
             valid_ixs = filter_near_cxs(cxs, scores)
             valid_cys = np.take(cys, valid_ixs)
-            
+
             prom = valid_cys.sum()/valid_cys.size
             desv = (((valid_cys - prom)**2).sum() / valid_cys.size) ** (1/2)
             valid_ixs = filter_far_from_cys(valid_ixs,cys,desv, prom)
@@ -491,7 +507,7 @@ for i in range(m_files.size):
         try:
             # Getting Cel area
             celGray = cv2.cvtColor(frame[cel1[1]:cel2[1],cel1[0]:cel2[0]], cv2.COLOR_BGR2GRAY)
-            
+
             # Preprocessing cel area
             celGrayTresh = deleting_horizontal_lines(cv2, celGray.copy())
 
@@ -634,7 +650,7 @@ else:
 bd_cupones['FechaHora'] = today_date()
 bd_cupones['Azure'] = np.where(
     np.logical_and(
-        np.logical_and(bd_cupones['DNI'].apply(len)==8, bd_cupones.AcertividadDNI>=ADMITED_THRESHOLD),
+        np.logical_and(bd_cupones['DNI'].apply(len) == 8, bd_cupones.AcertividadDNI>=ADMITED_THRESHOLD),
         np.logical_and(
             np.logical_and(bd_cupones['Telefono'].apply(len)<=9,bd_cupones['Telefono'].apply(len)>=6),
             bd_cupones.AcertividadTelefono>=ADMITED_THRESHOLD

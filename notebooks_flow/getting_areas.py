@@ -7,6 +7,7 @@ import numpy as np
 import datetime
 import math
 import argparse
+import pandas as pd
 
 import general_utils
 
@@ -188,5 +189,15 @@ np.save('areas_result/points', n_points)
 np.savetxt('areas_result/cxs.txt', n_cxs)
 np.savetxt('areas_result/cys.txt', n_cys)
 np.save('areas_result/paths', n_paths)
+
+data = {
+    'path': n_paths,
+    'width': n_widths,
+    'height': n_heights,
+    'cx': n_cxs,
+    'cy': n_cys
+}
+area_r = pd.DataFrame(data)
+area_r.to_csv('areas_result/areas.csv', index=False)
 
 print("Terminó :D. Fin:{}. Total:{}".format(datetime.datetime.now(), falses))

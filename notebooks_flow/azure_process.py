@@ -266,10 +266,16 @@ m_cys = np.genfromtxt(ARRAYS_PATH + 'cys.txt')
 m_files = np.load(ARRAYS_PATH + 'paths.npy')
 m_azure_flags = np.load(ARRAYS_PATH + 'azure_flags.npy')
 
+# Loading muestra numpy arrays
+areas_r = pd.read_csv(ARRAYS_PATH + 'areas.csv')
+areas_r = areas_r.fillna('')
+print('Total cupones area: {}'.format(areas_r.path.values.size))
+
 
 NUM_WORKERS = 10
-print('Empezó multi send')
-multi_send(m_files[:].tolist(), NUM_WORKERS, 1, 1)
+print('Empezó multi send con:{}'.format(len(areas_r.path.values.tolist())))
+# multi_send(m_files[:].tolist(), NUM_WORKERS, 1, 1)
+multi_send(areas_r.path.values.tolist(), NUM_WORKERS, 1, 1)
 print('Terminó multi send')
 
 
@@ -284,8 +290,14 @@ for i in range(NUM_WORKERS):
 
 azure_files = np.concatenate(files[:], axis=0)
 azure_jsons = np.concatenate(jsons[:], axis=0)
+print('Resultado de azure: {}  {}'.format(azure_files.size, azure_jsons.size))
 
-# PROCESSING
+# Merging the areas result with the azure result
+proc = pd.DataFrame({'path': azure_files, 'azure_json': azure_jsons})
+proc = pd.merge(areas_r, proc, how='left', on='path')
+print('Total cupones merge: {}'.format(proc.path.values.size))
+
+# Processing
 y_min = dni_area['y_min']
 y_max = dni_area['y_max']
 x_min = dni_area['x_min']
@@ -311,19 +323,21 @@ sco_ccs = []
 
 azure_str_jsons = []
 
-for i in range(azure_files.size):
+# for i in range(azure_files.size):
+for i in range(proc.path.values.size):
     # Grabbing the file
     # filename = m_files[i]
-    filename = azure_files[i]
+    # filename = azure_files[i]
+    filename = proc.path.values[i]
     name = filename.split('\\')
     name = name[len(name) - 1]
     name = name.split('.')[0]
 
-    c_x = int(m_cxs[i])
-    c_y = int(m_cys[i])
+    c_x = int(proc.cx.values[i])
+    c_y = int(proc.cy.values[i])
 
-    wi = m_widths[i]
-    hi = m_heights[i]
+    wi = proc.width.values[i]
+    hi = proc.height.values[i]
 
     x_minimo = int(c_x - (wi / 2))
     x_maximo = int(c_x + (wi / 2))
@@ -356,7 +370,8 @@ for i in range(azure_files.size):
 
         cupon_areas = dni_rect_from_ce(c_x, c_y+y_min, cv2, image, traslation_dict, lines_dict)
         # print('{}'.format(cupon_areas))
-        fields, scores = get_fields_from_json(azure_jsons[i], cupon_areas)
+        # fields, scores = get_fields_from_json(azure_jsons[i], cupon_areas)
+        fields, scores = get_fields_from_json(proc.azure_json.values[i], cupon_areas)
 
         # Parsing numeric fields
         dni, sdni = post_num_field(fields['dni'],scores['dni'],banned_field_dict,n_eqs)
@@ -429,7 +444,7 @@ for i in range(azure_files.size):
         sco_distris.append(sdist)
         sco_ccs.append(scc)
 
-        azure_str_jsons.append(json.dumps(azure_jsons[i]))
+        azure_str_jsons.append(json.dumps(proc.azure_json.values[i]))
 
 print('Termino :D ')
 
