@@ -13,7 +13,7 @@ import general_utils
 
 
 WORK_DIRECTORY = os.getcwd()
-INPUT = True
+INPUT = False
 # ruta_input = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\input'
 # ruta_campania = 'C:\\git\\cuponesWong\\CuponesWong\\data\\escaneos\\marzo_compras_2018'
 ruta_input = WORK_DIRECTORY + '\\input'
@@ -41,6 +41,12 @@ trainKP, trainDesc = detector.detectAndCompute(trainImg, None)
 MIN_MATCH_COUNT = 20
 
 
+def get_file_name(path):
+    return path.split('\\')[-1]
+
+np_get_file_name = np.vectorize(get_file_name)
+
+
 if INPUT:
     # 1 Getting files from inputh
     # ruta = 'C:\\git\\cuponesWong\\CuponesWong\\data\\muestra1800'
@@ -53,7 +59,7 @@ if INPUT:
     print("Terminó. {}".format(len(files_lista)))
 else:
     # 1 Getting files in multiple paths
-    rutas_personas  = [arch.name for arch in os.scandir(ruta_campania) if arch.is_dir()]
+    rutas_personas = [arch.name for arch in os.scandir(ruta_campania) if arch.is_dir()]
     total = 0
 
     files_lista = []
@@ -65,6 +71,27 @@ else:
             for file in files:
                 files_lista.append(ruta_campania + "\\" + persona + "\\" + bolsa + "\\" + file)
     print("Terminó. {}".format(len(files_lista)))
+
+    ruta_input = 'D:\\GyS\\proyectos\\cuponesWong\\proceso_definitivo\\process\\m_get50k'
+    # 1 Getting files from input
+    # ruta = 'C:\\git\\cuponesWong\\CuponesWong\\data\\muestra1800'
+    files = [arch.name for arch in os.scandir(ruta_input) if arch.is_file()]
+    files_lista_pro = []
+
+    for i in files:
+        files_lista_pro.append(ruta_input+'\\'+i)
+
+    print("Terminó . {}".format(len(files_lista_pro)))
+
+    total = np.array(files_lista)
+    l50k = np.array(files_lista_pro)
+
+    total_names = np_get_file_name(total)
+    l50k_names = np_get_file_name(l50k)
+
+    d = np.setdiff1d(total_names, l50k_names, assume_unique=True)
+    files_lista = np.take(total, np.argwhere(np.isin(total_names[:10], d))).tolist()
+    print("Fin . {}".format(len(files_lista)))
 
 
 # 1 Extracción del area de forma estática
@@ -92,9 +119,9 @@ print("Inicio {}".format(datetime.datetime.now()))
 for filepath in files_lista:
     # Initializing a boolean variable with False
     dni_founded = False
-
+    print('Reading {}'.format(filepath[0]))
     # Preprocessing section
-    image = cv2.imread(filepath)
+    image = cv2.imread(filepath[0])
     # print('Reading {}'.format(filepath))
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # print('{}'.format(image.shape))
@@ -160,7 +187,7 @@ for filepath in files_lista:
         p_lista.append([(x0, y0), (x1, y1), (x2, y2), (x3, y3)])
         c_x_lista.append(c_x)
         c_y_lista.append(c_y)
-        paths_lista.append(filepath)
+        paths_lista.append(filepath[0])
     else:
         falses += 1
         h_lista.append(9999)
@@ -168,7 +195,7 @@ for filepath in files_lista:
         p_lista.append([(0,0,),(0,0,),(0,0,),(0,0,)])
         c_x_lista.append(9999)
         c_y_lista.append(9999)
-        paths_lista.append(filepath)
+        paths_lista.append(filepath[0])
     # cv2.imshow("Sift_Roi", sift_roi)
     # cv2.imshow("Gray", gray)
     # cv2.waitKey(0)

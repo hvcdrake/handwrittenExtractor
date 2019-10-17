@@ -670,7 +670,7 @@ if BD_SAVE_FLAG:
     t0 = time.time()
     bd_cupones.to_sql('Logcupon', engine, if_exists='append', index=False, chunksize=200)
     # print(f'Inserción Logcupon finalizada en {time.time() - t0:.1f} seconds')
-    print("Inserción Logcupon finalizada en {:.1f} seconds".format(time.time()-t0))
+    print("Inserción Logcupon finalizada en {:.1f} seconds".format(time.time() - t0))
 else:
     print("BD_SAVE_FLAG set in False para Logcupon")
 
