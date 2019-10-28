@@ -13,7 +13,7 @@ import general_utils
 
 
 WORK_DIRECTORY = os.getcwd()
-INPUT = False
+INPUT = True
 # ruta_input = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\input'
 # ruta_campania = 'C:\\git\\cuponesWong\\CuponesWong\\data\\escaneos\\marzo_compras_2018'
 ruta_input = WORK_DIRECTORY + '\\input'
@@ -90,7 +90,7 @@ else:
     l50k_names = np_get_file_name(l50k)
 
     d = np.setdiff1d(total_names, l50k_names, assume_unique=True)
-    files_lista = np.take(total, np.argwhere(np.isin(total_names[:10], d))).tolist()
+    files_lista = np.take(total, np.argwhere(np.isin(total_names[:], d))).tolist()
     print("Fin . {}".format(len(files_lista)))
 
 
@@ -116,12 +116,20 @@ file_lista = []
 paths_lista = []
 
 print("Inicio {}".format(datetime.datetime.now()))
+# for filepath in files_lista[100:120]:
 for filepath in files_lista:
     # Initializing a boolean variable with False
     dni_founded = False
-    print('Reading {}'.format(filepath[0]))
-    # Preprocessing section
-    image = cv2.imread(filepath[0])
+
+    if INPUT:
+        print('Reading {}'.format(filepath))
+        # Preprocessing section
+        image = cv2.imread(filepath)
+    else:
+        print('Reading {}'.format(filepath[0]))
+        # Preprocessing section
+        image = cv2.imread(filepath[0])
+
     # print('Reading {}'.format(filepath))
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # print('{}'.format(image.shape))
@@ -187,7 +195,7 @@ for filepath in files_lista:
         p_lista.append([(x0, y0), (x1, y1), (x2, y2), (x3, y3)])
         c_x_lista.append(c_x)
         c_y_lista.append(c_y)
-        paths_lista.append(filepath[0])
+        paths_lista.append(filepath if INPUT else filepath[0])
     else:
         falses += 1
         h_lista.append(9999)
@@ -195,7 +203,7 @@ for filepath in files_lista:
         p_lista.append([(0,0,),(0,0,),(0,0,),(0,0,)])
         c_x_lista.append(9999)
         c_y_lista.append(9999)
-        paths_lista.append(filepath[0])
+        paths_lista.append(filepath if INPUT else filepath[0])
     # cv2.imshow("Sift_Roi", sift_roi)
     # cv2.imshow("Gray", gray)
     # cv2.waitKey(0)

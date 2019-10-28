@@ -70,15 +70,8 @@ lines_dict = {
 
 # construct the argument parser the unique param is the campaign id
 ap = argparse.ArgumentParser()
-ap.add_argument("-c", "--campaign", required=True, help="Identificador de la campaña a procesar")
+ap.add_argument("-c", "--campaign", required=True, help="Identificador de la campaña")
 args = vars(ap.parse_args())
-
-ID_CAMPANIA = int(args['campaign'])
-ID_USUARIO = 1
-WORK_DIRECTORY = getcwd()
-ARRAYS_PATH = WORK_DIRECTORY + '\\areas_result\\'
-TMP_PATH = WORK_DIRECTORY + '\\temps\\'
-LOCAL_PATH = WORK_DIRECTORY + '\\local_result\\'
 
 # Info about the params file
 p = 'params/campaigns'
@@ -88,9 +81,25 @@ dni_area = general_utils.get_param_from_file(camp_file, 'dni_search_area')
 traslation_dict = general_utils.get_param_from_file(camp_file, 'traslation_dict')
 lines_dict = general_utils.get_param_from_file(camp_file, 'lines_dict')
 
+# Folder params
+WORK_DIRECTORY = getcwd()
+ARRAYS_PATH = WORK_DIRECTORY + '\\areas_result\\'
+TMP_PATH = WORK_DIRECTORY + '\\temps\\'
+LOCAL_PATH = WORK_DIRECTORY + '\\local_result\\'
+# Execution params
+ID_CAMPANIA = int(args['campaign'])
+ID_USUARIO = 1
+# BD params
+BD_SAVE_FLAG = True
+BD_USERNAME = 'usercupon'
+BD_PASSWORD = '123456789'
+# BD_DATABASE_NAME = 'ClienteCupon'
+BD_DATABASE_NAME = 'DevClienteCupon'
+BD_HOST = '192.168.2.55'
+
 eqs = {
     'Normal': 90.00,
-    'Low': 85.00
+    'Low': 60.00
 }
 
 banned_field_dict = ['DNI:','DNI','DN']+['Telefono:','Telefono']+['E-mail:']+['Nombres y Apellidos:']+['Direccion:']+['Distrito:']+['Centro Comercial:']
@@ -164,7 +173,7 @@ def get_fields_from_json(azure_json, areas_dict):
         scores[key] = []
 
     for line in azure_json['recognitionResult']['lines']:
-        j+=1
+        j += 1
         # print('Line {}: {},{}'.format(j,line['text'],line['boundingBox']))
 
         # Drawing areas
@@ -253,9 +262,17 @@ def get_tel_from_line(string, num_eqs):
 def clean_letters(word):
     ret = ""
     for c in word:
-        if ('0' <= c and c <= '9'):
+        if '0' <= c and c <= '9':
             ret += str(c)
     return ret
+
+
+def has_letters(word):
+    ret = True
+    for c in word:
+        if not '0' <= c and c <= '9':
+            return not False
+    return not True
 
 
 # Getting arrays
@@ -458,9 +475,26 @@ bd_azure['DNI'] = np.where(bd_azure['DNI'].apply(len) >= 14,
     )
 
 bd_azure['AcertividadDNI'] = np.array(sco_dnis)
+bd_azure['AcertividadDNI'] = np.where(np.logical_and(bd_azure['DNI'].apply(len) <= 9,
+                                                     np.logical_and(bd_azure['DNI'].apply(len) >= 8,
+                                                                    np.logical_not(bd_azure['DNI'].apply(has_letters))
+                                                                    )
+                                                     ),
+                                      bd_azure['AcertividadDNI'],
+                                      0.0
+                                      )
 
 bd_azure['Telefono'] = np.array(tels)
 bd_azure['AcertividadTelefono'] = np.array(sco_tels)
+bd_azure['AcertividadTelefono'] = np.where(np.logical_and(np.logical_or(bd_azure['Telefono'].apply(len) == 9,
+                                                                   np.logical_or(bd_azure['Telefono'].apply(len) == 7,
+                                                                                 bd_azure['Telefono'].apply(len) == 6)
+                                                                   ),
+                                                     np.logical_not(bd_azure['Telefono'].apply(has_letters))
+                                                     ),
+                                           bd_azure['AcertividadTelefono'],
+                                           0.0
+                                           )
 
 bd_azure['NombreCompleto'] = np.array(nombres)
 bd_azure['AcertividadNombreCompleto'] = np.array(sco_nombres)
@@ -496,41 +530,43 @@ dataPrueba['NombreCompleto'] = dataPrueba['NombreCompleto'].apply(lambda x: x[:1
 dataPrueba['Direccion'] = dataPrueba['Direccion'].apply(lambda x: x[:150])
 dataPrueba['Distrito'] = dataPrueba['Distrito'].apply(lambda x: x[:50])
 dataPrueba['Correo'] = dataPrueba['Correo'].apply(lambda x: x[:150])
-dataPrueba['AzureJsonOCR'] = dataPrueba['AzureJsonOCR'].apply(lambda x: x[:1600])
+dataPrueba['AzureJsonOCR'] = dataPrueba['AzureJsonOCR'].apply(lambda x: x[:8000])
+
+if BD_SAVE_FLAG:
+    cnxn = pyodbc.connect('Driver={SQL Server}; Server=192.168.2.55; Database=ClienteCupon; UID=usercupon;PWD=123456789', autocommit=True)
+    conn_str = 'Driver={SQL Server}; Server=' + BD_HOST + '; Database='
+    conn_str += BD_DATABASE_NAME + '; UID=' + BD_USERNAME + ';PWD=' + BD_PASSWORD
+    cnxn = pyodbc.connect(conn_str, autocommit=True)
+    crsr = cnxn.cursor()
+    crsr.fast_executemany = False
+
+    sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [NombreArchivo]=?;"
+    params = [(dataPrueba.at[i,'DNI'],
+        dataPrueba.iloc[i]['AcertividadDNI'],
+        dataPrueba.at[i,'Telefono'],
+        dataPrueba.iloc[i]['AcertividadTelefono'],
+        dataPrueba.iloc[i]['NombreCompleto'],
+        dataPrueba.iloc[i]['AcertividadNombreCompleto'],
+        dataPrueba.iloc[i]['Direccion'],
+        dataPrueba.iloc[i]['AcertividadDireccion'],
+        dataPrueba.iloc[i]['Distrito'],
+        dataPrueba.iloc[i]['AcertividadDistrito'],
+        dataPrueba.iloc[i]['Correo'],
+        dataPrueba.iloc[i]['AcertividadCorreo'],
+        int(dataPrueba.iloc[i]['idCampania']),
+        int(dataPrueba.iloc[i]['idUsuario']),
+        int(dataPrueba.iloc[i]['idEstado']),
+        dataPrueba.iloc[i]['AzureJsonOCR'],
+        dataPrueba.at[i,'NombreArchivo']) for i in range(dataPrueba.shape[0])]
+
+    t0 = time.time()
+    crsr.executemany(sql, params)
+    print(f'{time.time() - t0:.1f} seconds')
 
 
-cnxn = pyodbc.connect('Driver={SQL Server}; Server=192.168.2.55; Database=ClienteCupon; UID=usercupon;PWD=123456789', autocommit=True)
-crsr = cnxn.cursor()
-
-crsr.fast_executemany = False
-
-sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [NombreArchivo]=?;"
-params = [(dataPrueba.at[i,'DNI'],
-    dataPrueba.iloc[i]['AcertividadDNI'],
-    dataPrueba.at[i,'Telefono'],
-    dataPrueba.iloc[i]['AcertividadTelefono'],
-    dataPrueba.iloc[i]['NombreCompleto'],
-    dataPrueba.iloc[i]['AcertividadNombreCompleto'],
-    dataPrueba.iloc[i]['Direccion'],
-    dataPrueba.iloc[i]['AcertividadDireccion'],
-    dataPrueba.iloc[i]['Distrito'],
-    dataPrueba.iloc[i]['AcertividadDistrito'],
-    dataPrueba.iloc[i]['Correo'],
-    dataPrueba.iloc[i]['AcertividadCorreo'],
-    int(dataPrueba.iloc[i]['idCampania']),
-    int(dataPrueba.iloc[i]['idUsuario']),
-    int(dataPrueba.iloc[i]['idEstado']),
-    dataPrueba.iloc[i]['AzureJsonOCR'],
-    dataPrueba.at[i,'NombreArchivo']) for i in range(dataPrueba.shape[0])]
-
-t0 = time.time()
-crsr.executemany(sql, params)
-print(f'{time.time() - t0:.1f} seconds')
-
-# Calculo
+# Merge
 local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})# azure_result = pd.read_csv('C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\azure_result\\azure_result.csv')
-res=pd.merge(local_result , bd_azure, how='left', on='NombreArchivo',)
-res = res[['NombreArchivo','DNI_x','AcertividadDNI_x','DNI_y','AcertividadDNI_y','Telefono_x','AcertividadTelefono_x','Telefono_y','AcertividadTelefono_y']]
+res =pd.merge(local_result, bd_azure, how='left', on='NombreArchivo',)
 res.rename(columns={
                         'DNI_x':'DNI_local',
                         'AcertividadDNI_x':'AcertividadDNI_local',
@@ -542,6 +578,53 @@ res.rename(columns={
                         'AcertividadTelefono_y':'AcertividadTelefono_azure',
                     },
                  inplace=True)
-res.to_csv('azure_result/summary.csv', encoding='utf-8', index = False)
 
 print('Termino actualizacion en base de datos')
+
+# Defining pandas engine for sql
+conn_str = 'mssql+pyodbc://' + BD_USERNAME + ':' + BD_PASSWORD + '@'
+conn_str += BD_HOST + '/' + BD_DATABASE_NAME
+conn_str += '?driver=SQL+Server+Native+Client+11.0'
+engine = sa.create_engine(conn_str)
+
+# Get the value of the params
+sql_params = 'select * from ' + BD_DATABASE_NAME + '.dbo.Campo'
+params = pd.read_sql_query(sql_params, engine)
+dni_param = params[params['Denominacion']=='DNI'].iloc[0,2]
+tel_param = params[params['Denominacion']=='Telefono'].iloc[0,2]
+mail_param = params[params['Denominacion']=='Email'].iloc[0,2]
+
+# Subset of DNI
+sub_dni = res[res.AcertividadDNI_azure<dni_param]
+sub_dni = sub_dni[['idCupon']]
+sub_dni['idCampo'] = int(1)
+
+# Subset of Telefono
+sub_tel = res[res.AcertividadTelefono_azure<tel_param]
+sub_tel = sub_tel[['idCupon']]
+sub_tel['idCampo'] = int(2)
+
+# Subset of Email
+sub_mail = res[res.AcertividadCorreo<mail_param]
+sub_mail = sub_mail[['idCupon']]
+sub_mail['idCampo'] = int(3)
+
+# Saving in DB
+# Inserción del subset DNI
+t0 = time.time()
+sub_dni.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_dni['idCupon'].values.size))
+
+# Inserción del subset Telefono
+t0 = time.time()
+sub_tel.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_tel['idCupon'].values.size))
+
+# Inserción del subset Email
+t0 = time.time()
+sub_mail.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_mail['idCupon'].values.size))
+
+# Writing summary
+res = res[['NombreArchivo','DNI_local','AcertividadDNI_local','DNI_azure','AcertividadDNI_azure','Telefono_local','AcertividadTelefono_local','Telefono_azure','AcertividadTelefono_azure']]
+res.to_csv('azure_result/summary.csv', encoding='utf-8', index = False)

@@ -81,18 +81,27 @@ traslation_dict = {
 }
 '''
 
+# Folder params
 WORK_DIRECTORY = getcwd()
 PARENT_DIRECTORY = path.abspath(path.join(WORK_DIRECTORY, pardir))
-
 RUTA_AREAS = PARENT_DIRECTORY + '\\areas_result\\'
 RUTA_CSV = PARENT_DIRECTORY + '\\local_result\\'
+# BD params
 BD_SAVE_FLAG = True
+BD_USERNAME = 'usercupon'
+BD_PASSWORD = '123456789'
+# BD_DATABASE_NAME = 'ClienteCupon'
+BD_DATABASE_NAME = 'DevClienteCupon'
+BD_HOST = '192.168.2.55'
+# Threshold params
 ADMITED_THRESHOLD = 84.00
 IMPROVEMENT_TRESHHOLD = 94.00
+# Executions params
 ID_CAMPANIA = str(args['campaign'])
 ID_USUARIO = 1
 
-# Getting the batch id
+
+# Setting the batch id
 now = datetime.datetime.now()
 dt_string = now.strftime("%Y%m%d%H%M%S")
 logg = open('log_idbatch_{}.txt'.format(dt_string), "w+")
@@ -106,6 +115,13 @@ def today_date():
     date = datetime.datetime.now()
     date = pd.to_datetime(date)
     return date
+
+
+def fix(x):
+    # x = x.replace('E:\\git\\cupones_wong\\data\\escaneos\\marzo_compras_2018\\','')
+    x = '\\'.join(x.split('\\')[-3:])
+    x = x.replace('\\','/')
+    return '/cupones/marzo_compras_2018/'+x
 
 
 def ordering_cx(boxes_in, scores_in, classes_in):
@@ -198,8 +214,8 @@ def dni_rect_from_ce(x, y, cv2_v, img, areas_dict, lines_dict):
         point_2 = point + np.array([areas_dict[key]['width'], areas_dict[key]['height']])
 
         point = np.where(point<=0,0,point)
-        point_2[0] = w if point_2[0]>= w else point_2[0]
-        point_2[1] = h if point_2[1]>= h else point_2[1]
+        point_2[0] = w if point_2[0] >= w else point_2[0]
+        point_2[1] = h if point_2[1] >= h else point_2[1]
 
         cv2_v.rectangle(img,(point[0],point[1]),(point_2[0],point_2[1]),color,thicknes)
         res_dict[key] = (point, point_2)
@@ -366,11 +382,11 @@ print("-- {} : Modelos cargados correctamente".format(datetime.datetime.now()))
 logg.write("-- {} : Modelos cargados correctamente".format(datetime.datetime.now())+'\n')
 
 # Loading muestra numpy arrays
-m_widths = np.genfromtxt(RUTA_AREAS+'widths.txt')
-m_heights = np.genfromtxt(RUTA_AREAS+'heights.txt')
-m_cxs = np.genfromtxt(RUTA_AREAS+'cxs.txt')
-m_cys = np.genfromtxt(RUTA_AREAS+'cys.txt')
-m_files = np.load(RUTA_AREAS+'paths.npy')
+m_widths = np.genfromtxt(RUTA_AREAS + 'widths.txt')
+m_heights = np.genfromtxt(RUTA_AREAS + 'heights.txt')
+m_cxs = np.genfromtxt(RUTA_AREAS + 'cxs.txt')
+m_cys = np.genfromtxt(RUTA_AREAS + 'cys.txt')
+m_files = np.load(RUTA_AREAS + 'paths.npy')
 
 # Loading muestra numpy arrays
 areas_r = pd.read_csv(RUTA_AREAS + 'areas.csv')
@@ -390,6 +406,7 @@ x_min = dni_area['x_min']
 x_max = dni_area['x_max']
 
 res_filenames = []
+res_rutas = []
 
 res_dni_digs = []
 res_dni_scores = []
@@ -448,6 +465,10 @@ for i in range(areas_r.path.values.size):
     frame = image.copy()
     found = False
 
+    res_filenames.append(name)
+    # res_rutas.append(areas_r.path.values[i].replace('E:\\git\\cupones_wong\\data\\escaneos\\',''))
+    res_rutas.append(fix(filename))
+
     if (c_x == 9999 or c_y == 9999):
         cv2.putText(image,'{}'.format('Area no detectada'), (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         # print('{},{}'.format(filename,'no detectado'))
@@ -455,7 +476,7 @@ for i in range(areas_r.path.values.size):
     else:
         found = True
         print('{} . {}'.format(i, name), end=' / ')
-        cv2.rectangle(image,(x_minimo,y_minimo+int(y_min)),(x_maximo,y_maximo+int(y_min)),(0,0,255),1)
+        cv2.rectangle(image,(x_minimo, y_minimo + int(y_min)), (x_maximo,y_maximo+int(y_min)), (0,0,255), 1)
         dni1, dni2, cel1, cel2 = dni_rect_from_ce(c_x, c_y + y_min, cv2, image, traslation_dict, {})
 
         try:
@@ -542,6 +563,7 @@ for i in range(areas_r.path.values.size):
             res_cel_cnn.append(cel_est_2)
             res_cel_boxes.append(n_boxes)
             cel_areas.append([cel1[0], cel2[0], cel1[1], cel2[1]])
+
         except Exception as e:
             print('Error CEL: {}'.format(e))
             res_cel_digs.append(np.array([]))
@@ -550,12 +572,13 @@ for i in range(areas_r.path.values.size):
             res_cel_boxes.append(np.array([]))
             cel_areas.append([])
 
-        res_filenames.append(name)
-        logg.write("    -{}Procesó {}".format(datetime.datetime.now(), name) + '\n')
+# logg.write("    -{}Procesó {}".format(datetime.datetime.now(), name) + '\n')
 print("-- {} : Terminó :D. Fin".format(datetime.datetime.now()))
 
 # Setting arrays
 np_res_filenames = np.array(res_filenames)
+np_res_rutas = np.array(res_rutas)
+
 np_res_dni_digs = np.array(res_dni_digs)
 np_res_dni_scores = np.array(res_dni_scores)
 np_res_dni_cnn = np.array(res_dni_cnn)
@@ -565,6 +588,7 @@ np_res_cel_digs = np.array(res_cel_digs)
 np_res_cel_scores = np.array(res_cel_scores)
 np_res_cel_cnn = np.array(res_cel_cnn)
 np_res_cel_boxes = np.array(res_cel_boxes)
+
 
 # Formatting data
 acers_d = []
@@ -579,7 +603,7 @@ for i in range(np_res_dni_scores.size):
     # acer_dni = 0 if len(np_res_dni_cnn[i]) != 8 else np_res_dni_scores[i].sum()/np_res_dni_scores[i].size
     acer_dni = 0 if len(np_res_dni_cnn[i]) != 8 else np_res_dni_scores[i].min()
     # acer_cel = 0 if (len(np_res_cel_cnn[i]) > 9 or len(np_res_cel_cnn[i])<6) else np_res_cel_scores[i].sum()/np_res_cel_scores[i].size
-    acer_cel = 0 if (len(np_res_cel_cnn[i]) > 9 or len(np_res_cel_cnn[i])<6) else np_res_cel_scores[i].min()
+    acer_cel = 0 if (len(np_res_cel_cnn[i]) > 9 or len(np_res_cel_cnn[i]) < 6) else np_res_cel_scores[i].min()
 
     acers_d.append(round(acer_dni * 100, 2))
     acers_c.append(round(acer_cel * 100, 2))
@@ -620,14 +644,19 @@ bd_cupones['idUsuario'] = ID_USUARIO
 bd_cupones['idEstado'] = 1
 bd_cupones['idBatch'] = int(dt_string)
 bd_cupones['LocalJsonOCR'] = np.array(local_jsons)
+bd_cupones['Ruta'] = np.array(np_res_rutas)
 
 # Corrección de tamaño de campos
 bd_cupones['DNI'] = bd_cupones['DNI'].apply(lambda x: x[:20])
 bd_cupones['Telefono'] = bd_cupones['Telefono'].apply(lambda x: x[:20])
-bd_cupones['LocalJsonOCR'] = bd_cupones['LocalJsonOCR'].apply(lambda x: x[:1600])
+bd_cupones['LocalJsonOCR'] = bd_cupones['LocalJsonOCR'].apply(lambda x: x[:8000])
 
-engine = sa.create_engine('mssql+pyodbc://usercupon:123456789@192.168.2.55/ClienteCupon?driver=SQL+Server+Native+Client+11.0') # SQL aut
 
+# engine = sa.create_engine('mssql+pyodbc://usercupon:123456789@192.168.2.55/ClienteCupon?driver=SQL+Server+Native+Client+11.0')
+conn_str = 'mssql+pyodbc://' + BD_USERNAME + ':' + BD_PASSWORD + '@'
+conn_str += BD_HOST + '/' + BD_DATABASE_NAME
+conn_str += '?driver=SQL+Server+Native+Client+11.0'
+engine = sa.create_engine(conn_str)
 
 if BD_SAVE_FLAG:
     # Inserción a la tabla cupon
@@ -635,10 +664,10 @@ if BD_SAVE_FLAG:
     bd_cupones.to_sql('Cupon', engine, if_exists='append', index=False, chunksize=200)
     # print(f"Inserción Cupon finalizada en {time.time() - t0:.1f} seconds")
     print("Inserción Cupon finalizada en {:.1f} seconds".format(time.time()-t0))
-    logg.write("-- {} : Fin escritura en base de datos".format(datetime.datetime.now(),name)+'\n')
-    # Getting the ids from the database // TODO
+    logg.write("-- {} : Fin escritura en base de datos".format(datetime.datetime.now(), name)+'\n')
+    # Getting the ids from the database
     time.sleep(1)
-    sql = 'select c.idCupon,c.NombreArchivo from ClienteCupon.dbo.Cupon c where c.idBatch={}'.format(dt_string)
+    sql = 'select c.idCupon,c.NombreArchivo from ' + BD_DATABASE_NAME + '.dbo.Cupon c where c.idBatch={}'.format(dt_string)
     ids_cupon = pd.read_sql_query(sql, engine)
 
     bd_cupones = pd.merge(ids_cupon, bd_cupones, how='left', on='NombreArchivo')
