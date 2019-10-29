@@ -470,9 +470,21 @@ for i in range(areas_r.path.values.size):
     res_rutas.append(fix(filename))
 
     if (c_x == 9999 or c_y == 9999):
-        cv2.putText(image,'{}'.format('Area no detectada'), (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        # print('{},{}'.format(filename,'no detectado'))
+        # cv2.putText(image,'{}'.format('Area no detectada'), (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        print('{},{}'.format(filename, 'Ancla no encontrada'))
         found = False
+
+        res_dni_digs.append(np.array([]))
+        res_dni_scores.append(np.array([]))
+        res_dni_cnn.append("")
+        res_dni_boxes.append(np.array([]))
+        dni_areas.append([])
+
+        res_cel_digs.append(np.array([]))
+        res_cel_scores.append(np.array([]))
+        res_cel_cnn.append("")
+        res_cel_boxes.append(np.array([]))
+        cel_areas.append([])
     else:
         found = True
         print('{} . {}'.format(i, name), end=' / ')

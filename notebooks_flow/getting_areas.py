@@ -13,7 +13,7 @@ import general_utils
 
 
 WORK_DIRECTORY = os.getcwd()
-INPUT = True
+INPUT = False
 # ruta_input = 'C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\input'
 # ruta_campania = 'C:\\git\\cuponesWong\\CuponesWong\\data\\escaneos\\marzo_compras_2018'
 ruta_input = WORK_DIRECTORY + '\\input'
@@ -116,8 +116,8 @@ file_lista = []
 paths_lista = []
 
 print("Inicio {}".format(datetime.datetime.now()))
-# for filepath in files_lista[100:120]:
-for filepath in files_lista:
+for filepath in files_lista[1730:1750]:
+# for filepath in files_lista:
     # Initializing a boolean variable with False
     dni_founded = False
 
