@@ -1,10 +1,14 @@
 # Import section
+import cv2
 import numpy as np
+import requests
+import time
 import json
 import pandas as pd
 import sqlalchemy as sa
 import pyodbc
 import time
+from paralel_send import multi_send
 from os import getcwd
 
 import argparse
