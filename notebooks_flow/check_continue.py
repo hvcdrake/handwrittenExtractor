@@ -208,7 +208,7 @@ def get_tel_from_line(string, num_eqs):
 def clean_letters(word):
     ret = ""
     for c in word:
-        if '0' <= c and c <= '9':
+        if '0' <= c <= '9':
             ret += str(c)
     return ret
 
@@ -219,6 +219,12 @@ def has_letters(word):
         if not '0' <= c and c <= '9':
             return not False
     return not True
+
+def digits(word):
+    for c in word:
+        if not c.isdigit():
+            return False
+    return True
 
 
 # Loading muestra numpy arrays
@@ -425,7 +431,7 @@ bd_azure['DNI'] = np.where(bd_azure['DNI'].apply(len) >= 14,
 bd_azure['AcertividadDNI'] = np.array(sco_dnis)
 bd_azure['AcertividadDNI'] = np.where(np.logical_and(bd_azure['DNI'].apply(len) <= 9,
                                                      np.logical_and(bd_azure['DNI'].apply(len) >= 8,
-                                                                    np.logical_not(bd_azure['DNI'].apply(has_letters))
+                                                                    bd_azure['DNI'].apply(digits)
                                                                     )
                                                      ),
                                       bd_azure['AcertividadDNI'],
@@ -438,7 +444,7 @@ bd_azure['AcertividadTelefono'] = np.where(np.logical_and(np.logical_or(bd_azure
                                                                    np.logical_or(bd_azure['Telefono'].apply(len) == 7,
                                                                                  bd_azure['Telefono'].apply(len) == 6)
                                                                    ),
-                                                     np.logical_not(bd_azure['Telefono'].apply(has_letters))
+                                                     bd_azure['Telefono'].apply(digits)
                                                      ),
                                            bd_azure['AcertividadTelefono'],
                                            0.0
@@ -484,7 +490,36 @@ dataPrueba['AzureJsonOCR'] = dataPrueba['AzureJsonOCR'].apply(lambda x: x[:8000]
 local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})
 
 # Merge for updating in database
-dataPrueba = pd.merge(dataPrueba, local_result[['idCupon','NombreArchivo']], how='left', on='NombreArchivo',)
+dataPrueba = pd.merge(dataPrueba, local_result[['idCupon','NombreArchivo','DNI','AcertividadDNI','Telefono','AcertividadTelefono']], how='left', on='NombreArchivo',)
+
+dataPrueba['DNI_def'] = np.where(dataPrueba['AcertividadDNI_y']>=89.00,
+                                 dataPrueba['DNI_y'],
+                                 np.where(np.logical_and(dataPrueba['AcertividadDNI_x'] == 0.0, dataPrueba['AcertividadDNI_y'] != 0.0),
+                                          dataPrueba['DNI_y'],
+                                          dataPrueba['DNI_x']
+                                         )
+                                )
+dataPrueba['AcertDNI_def'] = np.where(dataPrueba['AcertividadDNI_y']>=89.00,
+                                 dataPrueba['AcertividadDNI_y'],
+                                 np.where(np.logical_and(dataPrueba['AcertividadDNI_x'] == 0.0, dataPrueba['AcertividadDNI_y'] != 0.0),
+                                          dataPrueba['AcertividadDNI_y'],
+                                          dataPrueba['AcertividadDNI_x']
+                                         )
+                                )
+dataPrueba['Telefono_def'] = np.where(dataPrueba['AcertividadTelefono_y']>=90.00,
+                                 dataPrueba['Telefono_y'],
+                                 np.where(np.logical_and(dataPrueba['AcertividadTelefono_x'] == 0.0, dataPrueba['AcertividadTelefono_y'] != 0.0),
+                                          dataPrueba['Telefono_y'],
+                                          dataPrueba['Telefono_x']
+                                         )
+                                )
+dataPrueba['AcertTelefono_def'] = np.where(dataPrueba['AcertividadTelefono_y']>=90.00,
+                                 dataPrueba['AcertividadTelefono_y'],
+                                 np.where(np.logical_and(dataPrueba['AcertividadTelefono_x'] == 0.0, dataPrueba['AcertividadTelefono_y'] != 0.0),
+                                          dataPrueba['AcertividadTelefono_y'],
+                                          dataPrueba['AcertividadTelefono_x']
+                                         )
+                                )
 
 
 if BD_SAVE_FLAG:
@@ -495,13 +530,11 @@ if BD_SAVE_FLAG:
     crsr = cnxn.cursor()
     crsr.fast_executemany = False
 
-    # sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [NombreArchivo]=?;"
     sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [idCupon]=?;"
-
-    params = [(dataPrueba.at[i,'DNI'],
-        dataPrueba.iloc[i]['AcertividadDNI'],
-        dataPrueba.at[i,'Telefono'],
-        dataPrueba.iloc[i]['AcertividadTelefono'],
+    params = [(dataPrueba.at[i,'DNI_def'],
+        dataPrueba.iloc[i]['AcertDNI_def'],
+        dataPrueba.at[i,'Telefono_def'],
+        dataPrueba.iloc[i]['AcertTelefono_def'],
         dataPrueba.iloc[i]['NombreCompleto'],
         dataPrueba.iloc[i]['AcertividadNombreCompleto'],
         dataPrueba.iloc[i]['Direccion'],
@@ -514,16 +547,15 @@ if BD_SAVE_FLAG:
         int(dataPrueba.iloc[i]['idUsuario']),
         int(dataPrueba.iloc[i]['idEstado']),
         dataPrueba.iloc[i]['AzureJsonOCR'],
-        # int(dataPrueba.at[i,'idCupon'])) for i in range(15000,25000)]
-        int(dataPrueba.at[i,'idCupon'])) for i in range(dataPrueba.shape[0])]
+        int(dataPrueba.at[i, 'idCupon'])) for i in range(dataPrueba.shape[0])]
 
     t0 = time.time()
-    print('Updating last 10 in {}'.format(datetime.datetime.now()))
     crsr.executemany(sql, params)
     print(f'{time.time() - t0:.1f} seconds')
-    crsr.close()
 
-# Merge for writting the summary
+
+# Merge
+local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})
 res =pd.merge(local_result, bd_azure, how='left', on='NombreArchivo',)
 res.rename(columns={
                         'DNI_x':'DNI_local',
@@ -567,21 +599,22 @@ sub_mail = res[res.AcertividadCorreo<mail_param]
 sub_mail = sub_mail[['idCupon']]
 sub_mail['idCampo'] = int(3)
 
-# Saving in DB
-# Inserción del subset DNI
-t0 = time.time()
-sub_dni.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
-print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_dni['idCupon'].values.size))
+if BD_SAVE_FLAG:
+    # Saving in DB
+    # Inserción del subset DNI
+    t0 = time.time()
+    sub_dni.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_dni['idCupon'].values.size))
 
-# Inserción del subset Telefono
-t0 = time.time()
-sub_tel.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
-print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_tel['idCupon'].values.size))
+    # Inserción del subset Telefono
+    t0 = time.time()
+    sub_tel.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_tel['idCupon'].values.size))
 
-# Inserción del subset Email
-t0 = time.time()
-sub_mail.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
-print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_mail['idCupon'].values.size))
+    # Inserción del subset Email
+    t0 = time.time()
+    sub_mail.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_mail['idCupon'].values.size))
 
 # Writing summary
 res = res[['NombreArchivo','DNI_local','AcertividadDNI_local','DNI_azure','AcertividadDNI_azure','Telefono_local','AcertividadTelefono_local','Telefono_azure','AcertividadTelefono_azure']]

@@ -604,7 +604,7 @@ if BD_SAVE_FLAG:
     t0 = time.time()
     crsr.executemany(sql, params)
     print(f'{time.time() - t0:.1f} seconds')
-
+    crsr.close()
 
 # Merge
 local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})
