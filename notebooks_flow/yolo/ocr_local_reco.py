@@ -32,6 +32,7 @@ import general_utils
 # construct the argument parser the unique param is the campaign id
 ap = argparse.ArgumentParser()
 ap.add_argument("-c", "--campaign", required=True, help="Identificador de la campaña a procesar")
+ap.add_argument("-db", "--database", required=True, help="Identificador de la campaña")
 args = vars(ap.parse_args())
 
 # Info about the params file
@@ -91,7 +92,7 @@ BD_SAVE_FLAG = True
 BD_USERNAME = 'usercupon'
 BD_PASSWORD = '123456789'
 # BD_DATABASE_NAME = 'ClienteCupon'
-BD_DATABASE_NAME = 'DevClienteCupon'
+BD_DATABASE_NAME = args['database']
 BD_HOST = '192.168.2.55'
 # Threshold params
 ADMITED_THRESHOLD = 84.00

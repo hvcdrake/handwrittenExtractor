@@ -1,20 +1,10 @@
 # Import section
 import numpy as np
-import requests
-import time
-import json
 import pandas as pd
-import sqlalchemy as sa
-import pyodbc
-import time
 from paralel_send import multi_send
 from os import getcwd
 import os
 import shutil
-
-import argparse
-import general_utils
-
 
 # Folder params
 WORK_DIRECTORY = getcwd()

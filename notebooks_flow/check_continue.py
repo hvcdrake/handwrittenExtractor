@@ -1,15 +1,13 @@
 # Import section
 import cv2
 import numpy as np
-import requests
-import time
 import json
 import pandas as pd
 import sqlalchemy as sa
 import pyodbc
 import time
-from paralel_send import multi_send
 from os import getcwd
+import datetime
 
 import argparse
 import general_utils
@@ -482,6 +480,13 @@ dataPrueba['Distrito'] = dataPrueba['Distrito'].apply(lambda x: x[:50])
 dataPrueba['Correo'] = dataPrueba['Correo'].apply(lambda x: x[:150])
 dataPrueba['AzureJsonOCR'] = dataPrueba['AzureJsonOCR'].apply(lambda x: x[:8000])
 
+# Getting the local result
+local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})
+
+# Merge for updating in database
+dataPrueba = pd.merge(dataPrueba, local_result[['idCupon','NombreArchivo']], how='left', on='NombreArchivo',)
+
+
 if BD_SAVE_FLAG:
     cnxn = pyodbc.connect('Driver={SQL Server}; Server=192.168.2.55; Database=ClienteCupon; UID=usercupon;PWD=123456789', autocommit=True)
     conn_str = 'Driver={SQL Server}; Server=' + BD_HOST + '; Database='
@@ -490,7 +495,9 @@ if BD_SAVE_FLAG:
     crsr = cnxn.cursor()
     crsr.fast_executemany = False
 
-    sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [NombreArchivo]=?;"
+    # sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [NombreArchivo]=?;"
+    sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [idCupon]=?;"
+
     params = [(dataPrueba.at[i,'DNI'],
         dataPrueba.iloc[i]['AcertividadDNI'],
         dataPrueba.at[i,'Telefono'],
@@ -507,15 +514,16 @@ if BD_SAVE_FLAG:
         int(dataPrueba.iloc[i]['idUsuario']),
         int(dataPrueba.iloc[i]['idEstado']),
         dataPrueba.iloc[i]['AzureJsonOCR'],
-        dataPrueba.at[i,'NombreArchivo']) for i in range(dataPrueba.shape[0])]
+        # int(dataPrueba.at[i,'idCupon'])) for i in range(15000,25000)]
+        int(dataPrueba.at[i,'idCupon'])) for i in range(dataPrueba.shape[0])]
 
     t0 = time.time()
+    print('Updating last 10 in {}'.format(datetime.datetime.now()))
     crsr.executemany(sql, params)
     print(f'{time.time() - t0:.1f} seconds')
+    crsr.close()
 
-
-# Merge
-local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})# azure_result = pd.read_csv('C:\\git\\cuponesWong\\CuponesWong\\notebooks_flow\\azure_result\\azure_result.csv')
+# Merge for writting the summary
 res =pd.merge(local_result, bd_azure, how='left', on='NombreArchivo',)
 res.rename(columns={
                         'DNI_x':'DNI_local',

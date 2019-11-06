@@ -116,7 +116,7 @@ file_lista = []
 paths_lista = []
 
 print("Inicio {}".format(datetime.datetime.now()))
-for filepath in files_lista[1730:1750]:
+for filepath in files_lista[1730:1790]:
 # for filepath in files_lista:
     # Initializing a boolean variable with False
     dni_founded = False
