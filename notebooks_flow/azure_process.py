@@ -424,6 +424,10 @@ for i in range(proc.path.values.size):
         nomb_ape, snomb_ape = nomb1+" "+nomb2, (snomb1+snomb2)/2
         direccion, sdireccion = dire1+" "+dire2, (sdire1+sdire2)/2
 
+        # Adjusting mail - statitiscaly void mail and azure detection voi 93% success
+        if smail == 0 and mail=="":
+            smail = 71.00
+
         # Last trying to get DNI
         if sdni==0:
             # print('{}'.format(post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")))
