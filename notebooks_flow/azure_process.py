@@ -641,12 +641,12 @@ tel_param = params[params['Denominacion']=='Telefono'].iloc[0,2]
 mail_param = params[params['Denominacion']=='Email'].iloc[0,2]
 
 # Subset of DNI
-sub_dni = res[res.AcertividadDNI_azure<dni_param]
+sub_dni = res[res.AcertDNI_def<dni_param]
 sub_dni = sub_dni[['idCupon']]
 sub_dni['idCampo'] = int(1)
 
 # Subset of Telefono
-sub_tel = res[res.AcertividadTelefono_azure<tel_param]
+sub_tel = res[res.AcertTelefono_def<tel_param]
 sub_tel = sub_tel[['idCupon']]
 sub_tel['idCampo'] = int(2)
 
