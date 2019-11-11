@@ -150,6 +150,32 @@ def send_azure(paths, sleep_after_time, await_before_ask_time, worker_id):
         np.save('temps/n_files_{}'.format(worker_id), n_files)
         np.save('temps/n_jsons_{}'.format(worker_id), n_jsons)
 
+        tries = 1
+        while not os.path.exists('temps/n_files_{}.npy'.format(worker_id)):
+            print('Trying to save. Try:{}'.format(tries))
+            np.save('temps/n_files_{}'.format(worker_id), n_files)
+            tries += 1
+            if tries >= 10:
+                break
+
+        if tries >= 10:
+            print("Acc: {}. Worker {}: Numero de intentos superado n_files".format(str_debug_acc, worker_id))
+        else:
+            print("Acc: {}. Worker {}: Guardado nfiles exitoso".format(str_debug_acc, worker_id))
+
+        tries = 1
+        while not os.path.exists('temps/n_jsons_{}.npy'.format(worker_id)):
+            print('Trying to save. Try:{}'.format(tries))
+            np.save('temps/n_jsons_{}'.format(worker_id), n_jsons)
+            tries += 1
+            if tries >= 10:
+                break
+
+        if tries >= 10:
+            print("Acc: {}. Worker {}: Numero de intentos superado n_jsons_".format(str_debug_acc, worker_id))
+        else:
+            print("Acc: {}. Worker {}: Guardado n_jsons_ exitoso".format(str_debug_acc, worker_id))
+
         if os.path.exists('temps/n_files_{}.npy'.format(worker_id)) and os.path.exists('temps/n_files_{}_nf.npy'.format(worker_id)):
             print("Acc: {}. Worker {}: Final f deleting".format(str_debug_acc, worker_id))
             os.remove('temps/n_files_{}_nf.npy'.format(worker_id))
