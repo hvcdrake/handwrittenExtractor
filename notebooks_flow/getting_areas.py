@@ -197,7 +197,7 @@ for filepath in files_lista[:120]:
         p_lista.append([(x0, y0), (x1, y1), (x2, y2), (x3, y3)])
         c_x_lista.append(c_x)
         c_y_lista.append(c_y)
-        paths_lista.append(filepath if INPUT else filepath[0])
+        paths_lista.append(filepath if True else filepath[0])
     else:
         falses += 1
         h_lista.append(9999)
@@ -205,7 +205,7 @@ for filepath in files_lista[:120]:
         p_lista.append([(0,0,),(0,0,),(0,0,),(0,0,)])
         c_x_lista.append(9999)
         c_y_lista.append(9999)
-        paths_lista.append(filepath if INPUT else filepath[0])
+        paths_lista.append(filepath if True else filepath[0])
     # cv2.imshow("Sift_Roi", sift_roi)
     # cv2.imshow("Gray", gray)
     # cv2.waitKey(0)
