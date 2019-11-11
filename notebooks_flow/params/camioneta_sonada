@@ -1,0 +1,22 @@
+{
+	'dni_search_area': {
+		'x_min':0,
+		'x_max':833,
+		'y_min':100,
+		'y_max':190
+		},
+	'traslation_dict' : {
+		'nomb_ape1':{'tras_x':215,'tras_y':-140,'width':480,'height':60},
+		'nomb_ape2':{'tras_x':-40,'tras_y':-82,'width':730,'height':50},
+		'dni':{'tras_x':27,'tras_y':-40,'width':300,'height':55},
+		'tel':{'tras_x':27+400,'tras_y':-40,'width':270,'height':55},
+		'dir1':{'tras_x':100,'tras_y':7,'width':595,'height':50},
+		'dir2':{'tras_x':-40,'tras_y':57,'width':730,'height':50},
+		'distrito':{'tras_x':70,'tras_y':102,'width':620,'height':50},
+		'mail':{'tras_x':60,'tras_y':152,'width':635,'height':50},
+		'cc':{'tras_x':200,'tras_y':198,'width':495,'height':50}
+	},
+	'lines_dict': {
+		'dni_tel':{'tras_x':-40,'tras_y':-40,'width':730,'height':55}
+	}
+}

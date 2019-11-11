@@ -295,7 +295,7 @@ areas_r = areas_r.fillna('')
 print('Total cupones area: {}'.format(areas_r.path.values.size))
 
 
-NUM_WORKERS = 10
+NUM_WORKERS = 20
 print('Empezó multi send con:{}'.format(len(areas_r.path.values.tolist())))
 # multi_send(m_files[:].tolist(), NUM_WORKERS, 1, 1)
 multi_send(areas_r.path.values.tolist(), NUM_WORKERS, 1, 1)
@@ -665,12 +665,12 @@ if BD_SAVE_FLAG:
     # Inserción del subset Telefono
     t0 = time.time()
     sub_tel.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
-    print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_tel['idCupon'].values.size))
+    print("Inserción de {} rows en CuponUsuario Telefono finalizada en {:.1f} seconds".format(time.time()-t0, sub_tel['idCupon'].values.size))
 
     # Inserción del subset Email
     t0 = time.time()
     sub_mail.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
-    print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_mail['idCupon'].values.size))
+    print("Inserción de {} rows en CuponUsuario Mail finalizada en {:.1f} seconds".format(time.time()-t0, sub_mail['idCupon'].values.size))
 
 # Writing summary
 res = res[['NombreArchivo','DNI_local','AcertividadDNI_local','DNI_azure','AcertividadDNI_azure','Telefono_local','AcertividadTelefono_local','Telefono_azure','AcertividadTelefono_azure']]

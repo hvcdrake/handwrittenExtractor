@@ -72,6 +72,7 @@ else:
                 files_lista.append(ruta_campania + "\\" + persona + "\\" + bolsa + "\\" + file)
     print("Terminó. {}".format(len(files_lista)))
 
+    '''
     ruta_input = 'D:\\GyS\\proyectos\\cuponesWong\\proceso_definitivo\\process\\m_get50k'
     # 1 Getting files from input
     # ruta = 'C:\\git\\cuponesWong\\CuponesWong\\data\\muestra1800'
@@ -92,6 +93,7 @@ else:
     d = np.setdiff1d(total_names, l50k_names, assume_unique=True)
     files_lista = np.take(total, np.argwhere(np.isin(total_names[:], d))).tolist()
     print("Fin . {}".format(len(files_lista)))
+    '''
 
 
 # 1 Extracción del area de forma estática
@@ -116,12 +118,12 @@ file_lista = []
 paths_lista = []
 
 print("Inicio {}".format(datetime.datetime.now()))
-for filepath in files_lista[1730:1790]:
-# for filepath in files_lista:
+# for filepath in files_lista[1730:1790]:
+for filepath in files_lista[:120]:
     # Initializing a boolean variable with False
     dni_founded = False
 
-    if INPUT:
+    if True:
         print('Reading {}'.format(filepath))
         # Preprocessing section
         image = cv2.imread(filepath)

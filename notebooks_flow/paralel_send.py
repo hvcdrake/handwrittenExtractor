@@ -16,10 +16,21 @@ import os
 vision_base_url = "https://ewongcomputervisionapi.cognitiveservices.azure.com/vision/v2.0/"
 subscription_key = "5073681f50e64c1ea2618089f673b00b"
 
+# 2ND WONG CREDENTIALS
+vision_base_url2 = "https://ewongcomputervision02.cognitiveservices.azure.com/vision/v2.0/"
+subscription_key2 = "6a5396cd65ed49f99d75a86f0fdd192c"
+
 ocr_url = vision_base_url + "recognizeText?mode=Handwritten"
+ocr_url2 = vision_base_url2 + "recognizeText?mode=Handwritten"
+
 headers = {
     'Content-Type': 'application/octet-stream',
     'Ocp-Apim-Subscription-Key': subscription_key
+}
+
+headers2 = {
+    'Content-Type': 'application/octet-stream',
+    'Ocp-Apim-Subscription-Key': subscription_key2
 }
 
 
@@ -77,14 +88,20 @@ def send_azure(paths, sleep_after_time, await_before_ask_time, worker_id):
     files = []
     jsons = []
 
+    sec_account = True if worker_id > 9 else False
+    str_debug_acc = "2nd" if sec_account else "1st"
+
     try:
         # Fetching in paths
         for i, path in enumerate(paths):
-            print("Worker {}: Reading {}.{}".format(worker_id, i, path.split('\\')[-1]))
+            print("Acc: {}. Worker {}: Reading {}.{}".format(str_debug_acc, worker_id, i, path.split('\\')[-1]))
             image = open(path, "rb")
             d = image.read()
 
-            response = requests.post(ocr_url, headers=headers, data=d)
+            if sec_account:
+                response = requests.post(ocr_url, headers=headers, data=d)
+            else:
+                response = requests.post(ocr_url2, headers=headers2, data=d)
 
             # Holds the URI used to retrieve the recognized text.
             operation_url = response.headers["Operation-Location"]
@@ -96,11 +113,14 @@ def send_azure(paths, sleep_after_time, await_before_ask_time, worker_id):
             while (poll):
                 time.sleep(await_before_ask_time)
 
-                response_final = requests.get(
-                    operation_url, headers=headers)
+                if sec_account:
+                    response_final = requests.get(operation_url, headers=headers2)
+                else:
+                    response_final = requests.get(operation_url, headers=headers)
+
                 analysis = response_final.json()
-                debug_str = str(analysis)[:25] if len(str(analysis)) >= 25 else str(analysis)
-                print('Worker {}: Status:{}'.format(worker_id, debug_str))
+                debug_str = str(analysis)[:50] if len(str(analysis)) >= 50 else str(analysis)
+                print('Acc: {}. Worker {}: Status:{}'.format(str_debug_acc, worker_id, debug_str))
 
                 if ('recognitionResult' in analysis):
                     poll = False
@@ -111,7 +131,7 @@ def send_azure(paths, sleep_after_time, await_before_ask_time, worker_id):
             files.append(path)
             jsons.append(obj)
             image.close()
-            print("Worker {}: Finished {}.{} and waiting for {}".format(worker_id, i, path.split('\\')[-1], sleep_after_time))
+            print("Acc: {}. Worker {}: Finished {}.{} and waiting for {}".format(str_debug_acc, worker_id, i, path.split('\\')[-1], sleep_after_time))
 
             if (i % 300) == 0:
                 # print("Worker {}: Pre-saving")
@@ -131,11 +151,11 @@ def send_azure(paths, sleep_after_time, await_before_ask_time, worker_id):
         np.save('temps/n_jsons_{}'.format(worker_id), n_jsons)
 
         if os.path.exists('temps/n_files_{}.npy'.format(worker_id)) and os.path.exists('temps/n_files_{}_nf.npy'.format(worker_id)):
-            print("Worker {}: Final f deleting")
+            print("Acc: {}. Worker {}: Final f deleting".format(str_debug_acc, worker_id))
             os.remove('temps/n_files_{}_nf.npy'.format(worker_id))
         if os.path.exists('temps/n_jsons_{}.npy'.format(worker_id)) and os.path.exists('temps/n_jsons_{}_nf.npy'.format(worker_id)):
             os.remove('temps/n_jsons_{}_nf.npy'.format(worker_id))
-            print("Worker {}: Final js deleting")
+            print("Acc: {}. Worker {}: Final js deleting".format(str_debug_acc, worker_id))
 
     except Exception as e:
         print('Worker {}: .Error: {}'.format(worker_id, e))
