@@ -586,7 +586,7 @@ if BD_SAVE_FLAG:
     crsr = cnxn.cursor()
     crsr.fast_executemany = False
 
-    sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [idCupon]=?;"
+    sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=?, [DNI_Original]=?, [Telefono_Original]=?, [Correo_Original]=? WHERE [idCupon]=?;"
     params = [(dataPrueba.at[i,'DNI_def'],
         dataPrueba.iloc[i]['AcertDNI_def'],
         dataPrueba.at[i,'Telefono_def'],
@@ -603,6 +603,10 @@ if BD_SAVE_FLAG:
         int(dataPrueba.iloc[i]['idUsuario']),
         int(dataPrueba.iloc[i]['idEstado']),
         dataPrueba.iloc[i]['AzureJsonOCR'],
+        #Agregados para las nuevas columnas
+        dataPrueba.at[i, 'DNI_def'],
+        dataPrueba.at[i, 'Telefono_def'],
+        dataPrueba.iloc[i]['Correo'],
         int(dataPrueba.at[i, 'idCupon'])) for i in range(dataPrueba.shape[0])]
 
     t0 = time.time()
