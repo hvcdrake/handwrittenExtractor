@@ -10,5 +10,9 @@
 	"7": {
 		"name": "camioneta_sonada",
 		"conf_file": "params/camioneta_sonada"
+	},
+	"8": {
+		"name": "viva_italia_2019",
+		"conf_file": "params/viva_italia_2019"
 	}
 }
