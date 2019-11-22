@@ -411,7 +411,11 @@ for i in range(proc.path.values.size):
         dire1, sdire1 = post_num_field(fields['dir1'],scores['dir1'],banned_field_dict,separator=" ")
         dire2, sdire2 = post_num_field(fields['dir2'],scores['dir2'],banned_field_dict,separator=" ")
         dist, sdist = post_num_field(fields['distrito'],scores['distrito'],banned_field_dict,separator=" ")
-        cc, scc = post_num_field(fields['cc'],scores['cc'],banned_field_dict,separator=" ")
+
+        if 'cc' in fields and 'cc' in scores:
+            cc, scc = post_num_field(fields['cc'],scores['cc'],banned_field_dict,separator=" ")
+        else:
+            cc, scc = "", 100.00
 
         nomb1 = basic_field_clean(nomb1).strip()
         nomb2 = basic_field_clean(nomb2).strip()
@@ -429,13 +433,13 @@ for i in range(proc.path.values.size):
             smail = 71.00
 
         # Last trying to get DNI
-        if sdni==0:
+        if sdni==0 and 'dni_tel' in fields and 'dni_tel' in scores:
             # print('{}'.format(post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")))
             st, sc = post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator=" ")
             dni = get_dni_from_line(st, n_eqs)
             sdni = 0.0 if dni=="" else sc
         # Last trying to get Tel
-        if stel==0:
+        if stel==0 and 'dni_tel' in fields and 'dni_tel' in scores:
             # print('{}'.format(post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator="")))
             st, sc = post_num_field(fields['dni_tel'],scores['dni_tel'],{},separator=" ")
             tel = get_tel_from_line(st, n_eqs)
