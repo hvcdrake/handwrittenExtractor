@@ -11,6 +11,7 @@ import datetime
 
 import argparse
 import general_utils
+from paralel_db_send import multi_db_send
 
 
 # construct the argument parser the unique param is the campaign id
@@ -523,14 +524,15 @@ dataPrueba['AcertTelefono_def'] = np.where(dataPrueba['AcertividadTelefono_y']>=
 
 
 if BD_SAVE_FLAG:
+    '''
     cnxn = pyodbc.connect('Driver={SQL Server}; Server=192.168.2.55; Database=ClienteCupon; UID=usercupon;PWD=123456789', autocommit=True)
     conn_str = 'Driver={SQL Server}; Server=' + BD_HOST + '; Database='
     conn_str += BD_DATABASE_NAME + '; UID=' + BD_USERNAME + ';PWD=' + BD_PASSWORD
     cnxn = pyodbc.connect(conn_str, autocommit=True)
     crsr = cnxn.cursor()
     crsr.fast_executemany = False
-
     sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [idCupon]=?;"
+    '''
     params = [(dataPrueba.at[i,'DNI_def'],
         dataPrueba.iloc[i]['AcertDNI_def'],
         dataPrueba.at[i,'Telefono_def'],
@@ -549,11 +551,12 @@ if BD_SAVE_FLAG:
         dataPrueba.iloc[i]['AzureJsonOCR'],
         int(dataPrueba.at[i, 'idCupon'])) for i in range(dataPrueba.shape[0])]
 
+    multi_db_send(params, 10)
+    '''
     t0 = time.time()
     crsr.executemany(sql, params)
     print(f'{time.time() - t0:.1f} seconds')
-
-
+    '''
 # Merge
 local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})
 res =pd.merge(local_result, bd_azure, how='left', on='NombreArchivo',)
@@ -603,17 +606,17 @@ if BD_SAVE_FLAG:
     # Saving in DB
     # Inserción del subset DNI
     t0 = time.time()
-    sub_dni.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    # sub_dni.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
     print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_dni['idCupon'].values.size))
 
     # Inserción del subset Telefono
     t0 = time.time()
-    sub_tel.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    # sub_tel.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
     print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_tel['idCupon'].values.size))
 
     # Inserción del subset Email
     t0 = time.time()
-    sub_mail.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    # sub_mail.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
     print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_mail['idCupon'].values.size))
 
 # Writing summary
