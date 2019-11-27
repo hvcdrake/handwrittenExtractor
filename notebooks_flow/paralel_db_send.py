@@ -4,11 +4,11 @@ import numpy as np
 import datetime
 
 # BD params
-BD_USERNAME = 'usercupon'
-BD_PASSWORD = '123456789'
+BD_USERNAME = 'sa'
+BD_PASSWORD = 'Admin123'
 BD_DATABASE_NAME = 'ClienteCupon'
 # BD_DATABASE_NAME = 'DevClienteCupon'
-BD_HOST = '192.168.2.55'
+BD_HOST = '13.82.178.179,2701'
 
 
 def multi_db_send(params_full, workers):

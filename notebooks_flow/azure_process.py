@@ -9,6 +9,7 @@ import sqlalchemy as sa
 import pyodbc
 import time
 from paralel_send import multi_send
+from paralel_db_send import multi_db_send
 from os import getcwd
 
 import argparse
@@ -583,14 +584,14 @@ dataPrueba['AcertTelefono_def'] = np.where(dataPrueba['AcertividadTelefono_y']>=
 
 
 if BD_SAVE_FLAG:
-    cnxn = pyodbc.connect('Driver={SQL Server}; Server=192.168.2.55; Database=ClienteCupon; UID=usercupon;PWD=123456789', autocommit=True)
+    '''
     conn_str = 'Driver={SQL Server}; Server=' + BD_HOST + '; Database='
     conn_str += BD_DATABASE_NAME + '; UID=' + BD_USERNAME + ';PWD=' + BD_PASSWORD
     cnxn = pyodbc.connect(conn_str, autocommit=True)
     crsr = cnxn.cursor()
     crsr.fast_executemany = False
-
     sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=?, [DNI_Original]=?, [Telefono_Original]=?, [Correo_Original]=? WHERE [idCupon]=?;"
+    '''
     params = [(dataPrueba.at[i,'DNI_def'],
         dataPrueba.iloc[i]['AcertDNI_def'],
         dataPrueba.at[i,'Telefono_def'],
@@ -612,12 +613,13 @@ if BD_SAVE_FLAG:
         dataPrueba.at[i, 'Telefono_def'],
         dataPrueba.iloc[i]['Correo'],
         int(dataPrueba.at[i, 'idCupon'])) for i in range(dataPrueba.shape[0])]
-
+    multi_db_send(params, 10)
+    '''
     t0 = time.time()
     crsr.executemany(sql, params)
     print(f'{time.time() - t0:.1f} seconds')
     crsr.close()
-
+    '''
 # Merge
 local_result = pd.read_csv(LOCAL_PATH+'result.csv', dtype={'DNI':str, 'Telefono':str})
 res =pd.merge(local_result, bd_azure, how='left', on='NombreArchivo',)
