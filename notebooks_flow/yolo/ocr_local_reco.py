@@ -122,7 +122,7 @@ def fix(x):
     # x = x.replace('E:\\git\\cupones_wong\\data\\escaneos\\marzo_compras_2018\\','')
     x = '\\'.join(x.split('\\')[-3:])
     x = x.replace('\\','/')
-    return '/cupones/marzo_compras_2018/'+x
+    return '/cupones/'+str(camp_file)+'/'+x
 
 
 def ordering_cx(boxes_in, scores_in, classes_in):
@@ -156,6 +156,7 @@ def ordering_cx(boxes_in, scores_in, classes_in):
                 boxes[j,:] = boxes[i,:].copy()
                 boxes[i,:] = aux.copy()
     return boxes, scores, classes, cxs, cys
+
 
 def filter_near_cxs(cxs, scores):
     i=0
