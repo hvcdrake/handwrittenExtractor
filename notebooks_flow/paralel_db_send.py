@@ -1,7 +1,7 @@
 import threading
 import time
-import numpy as np
 import datetime
+import pyodbc
 
 # BD params
 BD_USERNAME = 'sa'
@@ -42,7 +42,7 @@ def multi_db_send(params_full, workers):
     threads = []
     i = 0
     for load in loads_per_thread:
-        hilo = threading.Thread(target=save_in_db, args=(load[:] i),)
+        hilo = threading.Thread(target=save_in_db, args=(load[:], i),)
         threads.append(hilo)
         i += 1
 
@@ -63,7 +63,6 @@ def save_in_db(params, worker_id):
      worker_id : worker incremental identificaction
     '''
 
-
     try:
         print("Worker {}: Starting save into DB".format(worker_id))
         conn_str = 'Driver={SQL Server}; Server=' + BD_HOST + '; Database='
@@ -72,7 +71,7 @@ def save_in_db(params, worker_id):
         crsr = cnxn.cursor()
         crsr.fast_executemany = False
 
-        sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=? WHERE [idCupon]=?;"
+        sql = "UPDATE Cupon SET [DNI]=?, [AcertividadDNI]=?, [Telefono]=?, [AcertividadTelefono]=?, [NombreCompleto]=?, [AcertividadNombreCompleto]=?, [Direccion]=?, [AcertividadDireccion]=?, [Distrito]=?, [AcertividadDistrito]=?, [Correo]=?, [AcertividadCorreo]=?, [idCampania]=?, [idUsuario]=?, [idEstado]=?, [AzureJsonOCR]=?, [DNI_Original]=?, [Telefono_Original]=?, [Correo_Original]=? WHERE [idCupon]=?;"
 
         t0 = time.time()
         crsr.executemany(sql, params)
