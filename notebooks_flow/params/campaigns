@@ -14,5 +14,9 @@
 	"8": {
 		"name": "viva_italia_2019",
 		"conf_file": "params/viva_italia_2019"
+	},
+	"8": {
+		"name": "toy_story_4",
+		"conf_file": "params/toy_story_4"
 	}
 }

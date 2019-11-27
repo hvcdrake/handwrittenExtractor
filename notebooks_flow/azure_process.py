@@ -92,11 +92,11 @@ ID_CAMPANIA = int(args['campaign'])
 ID_USUARIO = 1
 # BD params
 BD_SAVE_FLAG = True
-BD_USERNAME = 'usercupon'
-BD_PASSWORD = '123456789'
+BD_USERNAME = 'sa'
+BD_PASSWORD = 'Admin123'
 # BD_DATABASE_NAME = 'ClienteCupon'
 BD_DATABASE_NAME = args['database']
-BD_HOST = '192.168.2.55'
+BD_HOST = '13.82.178.179,2701'
 
 eqs = {
     'Normal': 90.00,
