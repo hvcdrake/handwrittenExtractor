@@ -10,6 +10,7 @@ import pyodbc
 import time
 from paralel_send import multi_send
 from paralel_db_send import multi_db_send
+from paralel_db_send import multi_db_insert
 from os import getcwd
 
 import argparse
@@ -637,6 +638,7 @@ res.rename(columns={
 
 print('Termino actualizacion en base de datos')
 
+
 # Defining pandas engine for sql
 conn_str = 'mssql+pyodbc://' + BD_USERNAME + ':' + BD_PASSWORD + '@'
 conn_str += BD_HOST + '/' + BD_DATABASE_NAME
@@ -667,19 +669,23 @@ sub_mail['idCampo'] = int(3)
 
 if BD_SAVE_FLAG:
     # Saving in DB
+    insert_workers = 10
     # Inserción del subset DNI
     t0 = time.time()
-    sub_dni.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    # sub_dni.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    multi_db_insert(sub_dni, insert_workers, 'CuponUsuario')
     print("Inserción de {} rows en CuponUsuario DNI finalizada en {:.1f} seconds".format(time.time()-t0, sub_dni['idCupon'].values.size))
 
     # Inserción del subset Telefono
     t0 = time.time()
-    sub_tel.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    # sub_tel.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    multi_db_insert(sub_tel, insert_workers, 'CuponUsuario')
     print("Inserción de {} rows en CuponUsuario Telefono finalizada en {:.1f} seconds".format(time.time()-t0, sub_tel['idCupon'].values.size))
 
     # Inserción del subset Email
     t0 = time.time()
-    sub_mail.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    # sub_mail.to_sql('CuponUsuario', engine, if_exists='append', index=False, chunksize=200)
+    multi_db_insert(sub_mail, insert_workers, 'CuponUsuario')
     print("Inserción de {} rows en CuponUsuario Mail finalizada en {:.1f} seconds".format(time.time()-t0, sub_mail['idCupon'].values.size))
 
 # Writing summary
