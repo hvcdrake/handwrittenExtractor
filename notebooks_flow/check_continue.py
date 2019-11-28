@@ -17,6 +17,7 @@ from paralel_db_send import multi_db_insert
 # construct the argument parser the unique param is the campaign id
 ap = argparse.ArgumentParser()
 ap.add_argument("-c", "--campaign", required=True, help="Identificador de la campaña")
+ap.add_argument("-db", "--database", required=True, help="Identificador de la campaña")
 args = vars(ap.parse_args())
 
 # Info about the params file
@@ -38,11 +39,11 @@ ID_CAMPANIA = int(args['campaign'])
 ID_USUARIO = 1
 # BD params
 BD_SAVE_FLAG = True
-BD_USERNAME = 'usercupon'
-BD_PASSWORD = '123456789'
-BD_DATABASE_NAME = 'ClienteCupon'
-# BD_DATABASE_NAME = 'DevClienteCupon'
-BD_HOST = '192.168.2.55'
+BD_USERNAME = 'sa'
+BD_PASSWORD = 'Admin123'
+# BD_DATABASE_NAME = 'ClienteCupon'
+BD_DATABASE_NAME = args['database']
+BD_HOST = '13.82.178.179,2701'
 
 eqs = {
     'Normal': 90.00,
@@ -252,7 +253,7 @@ for f in filenames:
 # Getting reproc
 files2 = []
 jsons2 = []
-for i in range(10):
+for i in range(20):
     file = np.load(TMP_PATH + 'n_files_{}.npy'.format(i), allow_pickle=True)
     azu = np.load(TMP_PATH + 'n_jsons_{}.npy'.format(i), allow_pickle=True)
     if file.size > 0 and azu.size > 0:

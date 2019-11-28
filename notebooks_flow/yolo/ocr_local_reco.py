@@ -7,7 +7,6 @@ import datetime
 import cv2
 from scipy.spatial import distance
 # from scipy import stats
-import pandas as pd
 from yolo import YOLO
 import json
 from os import getcwd
@@ -24,6 +23,7 @@ import pandas as pd
 import sqlalchemy as sa
 import pyodbc
 import time
+from paralel_db_send import multi_db_insert
 
 sys.path.append("..")
 import general_utils
@@ -671,12 +671,13 @@ conn_str = 'mssql+pyodbc://' + BD_USERNAME + ':' + BD_PASSWORD + '@'
 conn_str += BD_HOST + '/' + BD_DATABASE_NAME
 conn_str += '?driver=SQL+Server+Native+Client+11.0'
 engine = sa.create_engine(conn_str)
+insert_workers = 10
 
 if BD_SAVE_FLAG:
     # Inserción a la tabla cupon
     t0 = time.time()
-    bd_cupones.to_sql('Cupon', engine, if_exists='append', index=False, chunksize=200)
-    # print(f"Inserción Cupon finalizada en {time.time() - t0:.1f} seconds")
+    # bd_cupones.to_sql('Cupon', engine, if_exists='append', index=False, chunksize=200)
+    multi_db_insert(bd_cupones, insert_workers, 'Cupon')
     print("Inserción Cupon finalizada en {:.1f} seconds".format(time.time()-t0))
     logg.write("-- {} : Fin escritura en base de datos".format(datetime.datetime.now(), name)+'\n')
     # Getting the ids from the database
@@ -711,7 +712,8 @@ if BD_SAVE_FLAG:
     # Inserción a la tabla logcupon
     bd_cupones = bd_cupones[bd_cupones.Azure == 1].iloc[:, :-1]
     t0 = time.time()
-    bd_cupones.to_sql('Logcupon', engine, if_exists='append', index=False, chunksize=200)
+    # bd_cupones.to_sql('Logcupon', engine, if_exists='append', index=False, chunksize=200)
+    multi_db_insert(bd_cupones, insert_workers, 'Logcupon')
     # print(f'Inserción Logcupon finalizada en {time.time() - t0:.1f} seconds')
     print("Inserción Logcupon finalizada en {:.1f} seconds".format(time.time() - t0))
 else:
