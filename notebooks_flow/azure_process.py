@@ -547,6 +547,11 @@ bd_azure['AcertividadCorreo'] = np.where(bd_azure['Correo'].apply(general_utils.
                                          bd_azure['AcertividadCorreo'],
                                          0.0
                                          )
+# Adjusting mail - statitiscaly void mail and azure detection voi 93% success
+bd_azure['AcertividadCorreo'] = np.where(bd_azure['Correo'] == "",
+                                         71.00,
+                                         bd_azure['AcertividadCorreo']
+                                         )
 
 bd_azure['AzureJsonOCR'] = np.array(azure_str_jsons)
 
