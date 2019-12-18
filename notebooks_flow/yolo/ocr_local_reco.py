@@ -615,9 +615,10 @@ for i in range(np_res_dni_scores.size):
     sc_cel = np.round(np_res_cel_scores[i] * 10000).astype(int)
 
     # acer_dni = 0 if len(np_res_dni_cnn[i]) != 8 else np_res_dni_scores[i].sum()/np_res_dni_scores[i].size
-    acer_dni = 0 if len(np_res_dni_cnn[i]) != 8 else np_res_dni_scores[i].min()
+    # acer_dni = 0 if len(np_res_dni_cnn[i]) != 8 else np_res_dni_scores[i].min()
     # acer_cel = 0 if (len(np_res_cel_cnn[i]) > 9 or len(np_res_cel_cnn[i])<6) else np_res_cel_scores[i].sum()/np_res_cel_scores[i].size
-    acer_cel = 0 if (len(np_res_cel_cnn[i]) > 9 or len(np_res_cel_cnn[i]) < 6) else np_res_cel_scores[i].min()
+    acer_dni = 0 if (not general_utils.validate_dni_num(np_res_dni_cnn[i])) else np_res_dni_scores[i].min()
+    acer_cel = 0 if (not general_utils.validate_telefono_num(np_res_cel_cnn[i])) else np_res_cel_scores[i].min()
 
     acers_d.append(round(acer_dni * 100, 2))
     acers_c.append(round(acer_cel * 100, 2))

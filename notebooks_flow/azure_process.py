@@ -491,6 +491,13 @@ bd_azure['DNI'] = np.where(bd_azure['DNI'].apply(len) >= 14,
     )
 
 bd_azure['AcertividadDNI'] = np.array(sco_dnis)
+bd_azure['AcertividadDNI'] = np.where(np.logical_and(bd_azure['DNI'].apply(general_utils.validate_dni_num),
+                                                     bd_azure['DNI'].apply(digits)
+                                                     ),
+                                      bd_azure['AcertividadDNI'],
+                                      0.0
+                                      )
+'''
 bd_azure['AcertividadDNI'] = np.where(np.logical_and(bd_azure['DNI'].apply(len) <= 9,
                                                      np.logical_and(bd_azure['DNI'].apply(len) >= 8,
                                                                     bd_azure['DNI'].apply(digits)
@@ -499,9 +506,19 @@ bd_azure['AcertividadDNI'] = np.where(np.logical_and(bd_azure['DNI'].apply(len) 
                                       bd_azure['AcertividadDNI'],
                                       0.0
                                       )
+'''
+
 
 bd_azure['Telefono'] = np.array(tels)
 bd_azure['AcertividadTelefono'] = np.array(sco_tels)
+bd_azure['AcertividadTelefono'] = np.where(np.logical_and(
+                                                bd_azure['Telefono'].apply(general_utils.validate_telefono_num),
+                                                bd_azure['Telefono'].apply(digits)
+                                                ),
+                                           bd_azure['AcertividadTelefono'],
+                                           0.0
+                                           )
+'''
 bd_azure['AcertividadTelefono'] = np.where(np.logical_and(np.logical_or(bd_azure['Telefono'].apply(len) == 9,
                                                                    np.logical_or(bd_azure['Telefono'].apply(len) == 7,
                                                                                  bd_azure['Telefono'].apply(len) == 6)
@@ -511,6 +528,7 @@ bd_azure['AcertividadTelefono'] = np.where(np.logical_and(np.logical_or(bd_azure
                                            bd_azure['AcertividadTelefono'],
                                            0.0
                                            )
+'''
 
 bd_azure['NombreCompleto'] = np.array(nombres)
 bd_azure['AcertividadNombreCompleto'] = np.array(sco_nombres)
@@ -525,6 +543,10 @@ bd_azure['Correo'] = np.array(mails)
 # bd_azure['Correo'] = bd_azure['Correo'].apply(str.lower)
 
 bd_azure['AcertividadCorreo'] = np.array(sco_mails)
+bd_azure['AcertividadCorreo'] = np.where(bd_azure['Correo'].apply(general_utils.validate_mail),
+                                         bd_azure['AcertividadCorreo'],
+                                         0.0
+                                         )
 
 bd_azure['AzureJsonOCR'] = np.array(azure_str_jsons)
 
