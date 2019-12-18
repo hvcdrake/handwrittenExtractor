@@ -50,7 +50,7 @@ def validate_dni_num(dni):
 
 
 def validate_mail(email):
-    if not EMAIL_REGEX.fullmatch(email):
+    if EMAIL_REGEX.fullmatch(email):
         return True
     else:
         return False
