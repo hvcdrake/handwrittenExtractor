@@ -23,10 +23,10 @@ import pandas as pd
 import sqlalchemy as sa
 import pyodbc
 import time
-from paralel_db_send import multi_db_insert
 
 sys.path.append("..")
 import general_utils
+from paralel_db_send import multi_db_insert
 
 
 # construct the argument parser the unique param is the campaign id
