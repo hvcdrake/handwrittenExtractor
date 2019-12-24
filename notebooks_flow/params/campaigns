@@ -18,5 +18,9 @@
 	"10": {
 		"name": "toy_story_4",
 		"conf_file": "params/toy_story_4"
+	},
+	"1": {
+		"name": "premios_estilos_2018",
+		"conf_file": "params/premios_estilos_2018"
 	}
 }

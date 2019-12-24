@@ -122,7 +122,8 @@ def fix(x):
     # x = x.replace('E:\\git\\cupones_wong\\data\\escaneos\\marzo_compras_2018\\','')
     x = '\\'.join(x.split('\\')[-3:])
     x = x.replace('\\','/')
-    return '/cupones/'+str(camp_file)+'/'+x
+    campaign_base = str(camp_file).split('/')[-1]
+    return '/cupones/' + campaign_base + '/'+x
 
 
 def ordering_cx(boxes_in, scores_in, classes_in):
