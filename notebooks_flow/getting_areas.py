@@ -119,50 +119,48 @@ paths_lista = []
 
 print("Inicio {}".format(datetime.datetime.now()))
 # for filepath in files_lista[1730:1790]:
-for filepath in files_lista[:120]:
+for filepath in files_lista[36190:36200]:
     # Initializing a boolean variable with False
     dni_founded = False
 
-    if True:
-        print('Reading {}'.format(filepath))
-        # Preprocessing section
-        image = cv2.imread(filepath)
-    else:
-        print('Reading {}'.format(filepath[0]))
-        # Preprocessing section
-        image = cv2.imread(filepath[0])
+    print('Reading {}'.format(filepath))
+    # Preprocessing section
+    image = cv2.imread(filepath)
 
-    # print('Reading {}'.format(filepath))
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # print('{}'.format(image.shape))
-    y_max = image.shape[0] if y_max > image.shape[0] else y_max
-    x_max = image.shape[1] if x_max > image.shape[1] else x_max
+    try:
+        # print('Reading {}'.format(filepath))
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # print('{}'.format(image.shape))
+        y_max = image.shape[0] if y_max > image.shape[0] else y_max
+        x_max = image.shape[1] if x_max > image.shape[1] else x_max
 
-    sift_roi = gray[y_min:y_max, x_min:x_max]
-    sift_roi = cv2.adaptiveThreshold(sift_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, 11)
+        sift_roi = gray[y_min:y_max, x_min:x_max]
+        sift_roi = cv2.adaptiveThreshold(sift_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, 11)
 
-    # SIFT DETECTION
-    queryKP, queryDesc = detector.detectAndCompute(sift_roi, None)
-    matches = flann.knnMatch(queryDesc, trainDesc, k=2)
-    detection = False
+        # SIFT DETECTION
+        queryKP, queryDesc = detector.detectAndCompute(sift_roi, None)
+        matches = flann.knnMatch(queryDesc, trainDesc, k=2)
+        detection = False
 
-    goodMatch = []
-    for m, n in matches:
-        if(m.distance < 0.75 * n.distance):
-            goodMatch.append(m)
-    if(len(goodMatch) > MIN_MATCH_COUNT):
-        tp = []
-        qp = []
-        for m in goodMatch:
-            tp.append(trainKP[m.trainIdx].pt)
-            qp.append(queryKP[m.queryIdx].pt)
-        tp, qp = np.float32((tp, qp))
-        H, status = cv2.findHomography(tp, qp, cv2.RANSAC, 3.0)
-        h, w = trainImg.shape
-        trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
-        queryBorder = cv2.perspectiveTransform(trainBorder, H)
-        cv2.polylines(sift_roi, [np.int32(queryBorder)], True, (0, 255, 0), 3)
-        dni_founded = True
+        goodMatch = []
+        for m, n in matches:
+            if(m.distance < 0.75 * n.distance):
+                goodMatch.append(m)
+        if(len(goodMatch) > MIN_MATCH_COUNT):
+            tp = []
+            qp = []
+            for m in goodMatch:
+                tp.append(trainKP[m.trainIdx].pt)
+                qp.append(queryKP[m.queryIdx].pt)
+            tp, qp = np.float32((tp, qp))
+            H, status = cv2.findHomography(tp, qp, cv2.RANSAC, 3.0)
+            h, w = trainImg.shape
+            trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
+            queryBorder = cv2.perspectiveTransform(trainBorder, H)
+            cv2.polylines(sift_roi, [np.int32(queryBorder)], True, (0, 255, 0), 3)
+            dni_founded = True
+    except:
+        dni_founded = False
 
     if dni_founded:
         # -------Comparacion de Hmax y Wmax-----
@@ -206,10 +204,6 @@ for filepath in files_lista[:120]:
         c_x_lista.append(9999)
         c_y_lista.append(9999)
         paths_lista.append(filepath if True else filepath[0])
-    # cv2.imshow("Sift_Roi", sift_roi)
-    # cv2.imshow("Gray", gray)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
 
 # convirtiendo a nunmpy arrays
 n_widths = np.array(w_lista)
