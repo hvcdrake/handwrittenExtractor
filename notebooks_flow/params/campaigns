@@ -26,5 +26,9 @@
 	"6": {
 		"name": "regalos_mama_2019",
 		"conf_file": "params/regalos_mama_2019"
+	},
+	"5": {
+		"name": "viaje_increible_2018",
+		"conf_file": "params/viaje_increible_2018"
 	}
 }
